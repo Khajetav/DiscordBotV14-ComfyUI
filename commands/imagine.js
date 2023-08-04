@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const axios = require('axios');
 const WebSocket = require('ws');
-const fs = require('fs'); // Import the fs module
+const fs = require('fs'); 
 const path = require('path');
 const { AttachmentBuilder } = require('discord.js');
 const { randomInt } = require('crypto');
@@ -255,6 +255,8 @@ module.exports = {
         let filename = formattedDate;
         // set the filename prefix
         promptJson["19"]["inputs"]["filename_prefix"] = filename;
+        // TODO: make relative paths
+        // TODO: move project out of desktop lmao
         const folderPath = 'C:\\Users\\kajus\\Desktop\\ComfyUI_windows_portable\\ComfyUI\\output';
 
         // it's possible to get the image through the web socket, but it's a bit buggy
