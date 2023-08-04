@@ -35,7 +35,12 @@ module.exports = {
             (
                 new ButtonBuilder()
                     .setCustomId('repeat')
-                    .setLabel(`🔁`)
+                    .setEmoji('🔄')
+                    .setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId('dm')
+                    .setEmoji('📩')
+                    //.setEmoji(`:envelope:`)
                     .setStyle(ButtonStyle.Secondary),
         )
 
@@ -49,7 +54,8 @@ module.exports = {
         setTimeout(async () => {
             await interaction.deleteReply();
             //const followUpMessage = await interaction.followUp(
-            await interaction.followUp(
+            //await interaction.user.send(
+            await interaction.channel.send(
                 {
                     content: `<@${interaction.user.id}>` + ", your image is here!",
                     embeds: [
@@ -69,10 +75,22 @@ module.exports = {
         const collector = await interaction.channel.createMessageComponentCollector();
 
         collector.on('collect', async (i) => {
-            const member = i.member;
+            console.log("Entering collector...");
+            console.log("customID: " + interaction.customId);
             await i.deferReply({ ephemeral: true });
-            setTimeout(async () => {
+            if (i.customId === 'dm') {
+                await i.user.send(
+                    {
+                        content: `<@${interaction.user.id}>` + ", your image is here!",
+                        embeds: [
+                            new EmbedBuilder()
+                                .setTitle("Your prompt: " + testPrompt)
+                                .setImage('https://i.etsystatic.com/25272370/r/il/d3bc7b/3649789967/il_570xN.3649789967_nakt.jpg'),
+                        ],
+                    }
+                );
                 await i.deleteReply();
+            } else if (i.customId === 'repeat') {
                 //const followUpMessage = await interaction.followUp(
                 await i.followUp(
                     {
@@ -87,10 +105,9 @@ module.exports = {
                         components: [button]
                     }
                 );
-                //const channel = interaction.channel;
-                //const message = await channel.messages.fetch(followUpMessage.id);
-                //await message.react('🔁');
-            }, 1000);
+                await i.deleteReply();
+            }
+            //await i.deleteReply();
         })
     }
 };
