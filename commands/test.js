@@ -107,7 +107,12 @@ module.exports = {
                 );
                 await i.deleteReply();
             }
-            //await i.deleteReply();
+            //
+
+
+
+
+            await i.deleteReply();
         })
     }
 };

@@ -1,1 +1,1 @@
-node deploy-commands.js
+node deploy-commands.js > outputDeploy.log 2>&1

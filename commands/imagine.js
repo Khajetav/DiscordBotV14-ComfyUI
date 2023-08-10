@@ -51,6 +51,7 @@ module.exports = {
         let promptJson = {
             "4": {
                 "inputs": {
+                    //"ckpt_name": "talmendoxlSDXL_v11Beta.safetensors"
                     "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
                 },
                 "class_type": "CheckpointLoaderSimple"

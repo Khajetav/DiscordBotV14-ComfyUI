@@ -11,51 +11,28 @@ module.exports = {
     // Discord slash command stuff
     //
     data: new SlashCommandBuilder()
-        .setName('temp')
-        .setDescription('imagines tits')
+        .setName('pixelart')
+        .setDescription('imagines pixelated tits')
         .addStringOption(option => option.setName('prompt').setDescription('What you want to imagine').setRequired(true))
         .addNumberOption(option => option.setName('cfg').setDescription('How strong is the prompt').setRequired(false))
-        .addStringOption(option => option.setName('negative').setDescription('The negative prompt').setRequired(false))
-        .addStringOption(option => option.setName('style').setDescription('Style of the picture').setRequired(false).setAutocomplete(true)),
+        .addStringOption(option => option.setName('negative').setDescription('The negative prompt').setRequired(false)),
     // https://discordjs.guide/slash-commands/autocomplete.html#sending-results
-    async autocomplete(interaction) {
-        const focusedValue = interaction.options.getFocused();
-        const jsonFilePath = 'C:/Users/kajus/Desktop/ComfyUI_windows_portable/ComfyUI/custom_nodes/sdxl_prompt_styler/sdxl_styles.json';
-        try {
-            const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
-            const data = JSON.parse(jsonData);
-            const choices = data.map(item => item.name);
-            //const choices = ['sai-base', 'sai-3d-model', 'sai-lowpoly'];
-            const filtered = choices.filter(choice => choice.startsWith(focusedValue));
-            await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
-        } catch (error) {
-            console.error('Error reading/parsing the JSON file:', error);
-        }
-    },
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true });
         // prompt is what the user types in Discord
         // can expand this later on to take style too
         const prompt = interaction.options.getString('prompt');
         const cfg = interaction.options.getNumber('cfg');
         const negative = interaction.options.getString('negative');
-        const style = interaction.options.getString('style');
         console.log('Prompt received...');
         console.log(prompt);
 
         // deferReply is needed for when the loading time is longer than 3 seconds
         // but can edit it only once (probably can edit more than once but need some other code for it)
-        //await interaction.deferReply();
+        await interaction.deferReply();
 
         // promptJson is the message that we send through API
         // we edit this with what the user has sent to the prompt and then it forwards the info to ComfyUI
         let promptJson = {
-            "4": {
-                "inputs": {
-                    "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
-                },
-                "class_type": "CheckpointLoaderSimple"
-            },
             "5": {
                 "inputs": {
                     "width": 1024,
@@ -64,27 +41,47 @@ module.exports = {
                 },
                 "class_type": "EmptyLatentImage"
             },
+            "6": {
+                "inputs": {
+                    "text": "tits,naked women (flat shading:1.2), (minimalist:1.4)",
+                    "clip": [
+                        "53",
+                        1
+                    ]
+                },
+                "class_type": "CLIPTextEncode"
+            },
+            "7": {
+                "inputs": {
+                    "text": "text, watermark, blurry, deformed, depth of field, realistic, 3d render, outline",
+                    "clip": [
+                        "53",
+                        1
+                    ]
+                },
+                "class_type": "CLIPTextEncode"
+            },
             "10": {
                 "inputs": {
                     "add_noise": "enable",
-                    "noise_seed": 570665753905807,
-                    "steps": 25,
-                    "cfg": 10,
-                    "sampler_name": "euler",
+                    "noise_seed": 48857274872740,
+                    "steps": 20,
+                    "cfg": 8,
+                    "sampler_name": "euler_ancestral",
                     "scheduler": "normal",
                     "start_at_step": 0,
                     "end_at_step": 20,
                     "return_with_leftover_noise": "enable",
                     "model": [
-                        "4",
+                        "53",
                         0
                     ],
                     "positive": [
-                        "50",
+                        "6",
                         0
                     ],
                     "negative": [
-                        "51",
+                        "7",
                         0
                     ],
                     "latent_image": [
@@ -94,70 +91,14 @@ module.exports = {
                 },
                 "class_type": "KSamplerAdvanced"
             },
-            "11": {
-                "inputs": {
-                    "add_noise": "disable",
-                    "noise_seed": 0,
-                    "steps": 25,
-                    "cfg": 8,
-                    "sampler_name": "euler",
-                    "scheduler": "normal",
-                    "start_at_step": 20,
-                    "end_at_step": 10000,
-                    "return_with_leftover_noise": "disable",
-                    "model": [
-                        "12",
-                        0
-                    ],
-                    "positive": [
-                        "15",
-                        0
-                    ],
-                    "negative": [
-                        "16",
-                        0
-                    ],
-                    "latent_image": [
-                        "10",
-                        0
-                    ]
-                },
-                "class_type": "KSamplerAdvanced"
-            },
-            "12": {
-                "inputs": {
-                    "ckpt_name": "sd_xl_refiner_1.0.safetensors"
-                },
-                "class_type": "CheckpointLoaderSimple"
-            },
-            "15": {
-                "inputs": {
-                    "text": "positive prompt",
-                    "clip": [
-                        "12",
-                        1
-                    ]
-                },
-                "class_type": "CLIPTextEncode"
-            },
-            "16": {
-                "inputs": {
-                    "text": "",
-                    "clip": [
-                        "12",
-                        1
-                    ]
-                },
-                "class_type": "CLIPTextEncode"
-            },
             "17": {
                 "inputs": {
                     "samples": [
-                        "11",
+                        "10",
                         0
                     ],
                     "vae": [
-                        "12",
+                        "57",
                         2
                     ]
                 },
@@ -173,73 +114,39 @@ module.exports = {
                 },
                 "class_type": "SaveImage"
             },
-            "49": {
+            "53": {
                 "inputs": {
-                    "text_positive": "positive prompt",
-                    "text_negative": "",
-                    "style": "sai-base",
-                    "log_prompt": "No"
-                },
-                "class_type": "SDXLPromptStyler"
-            },
-            "50": {
-                "inputs": {
-                    "width": 1024,
-                    "height": 1024,
-                    "crop_w": 0,
-                    "crop_h": 0,
-                    "target_width": 1024,
-                    "target_height": 1024,
-                    "text_g": [
-                        "49",
+                    "lora_name": "pixel-art-xl-v1.1.safetensors",
+                    "strength_model": 1.0000000000000002,
+                    "strength_clip": 1,
+                    "model": [
+                        "57",
                         0
                     ],
-                    "text_l": "positive prompt",
                     "clip": [
-                        "4",
+                        "57",
                         1
                     ]
                 },
-                "class_type": "CLIPTextEncodeSDXL"
+                "class_type": "LoraLoader"
             },
-            "51": {
+            "57": {
                 "inputs": {
-                    "width": 1024,
-                    "height": 1024,
-                    "crop_w": 0,
-                    "crop_h": 0,
-                    "target_width": 1024,
-                    "target_height": 1024,
-                    "text_g": [
-                        "49",
-                        1
-                    ],
-                    "text_l": "",
-                    "clip": [
-                        "4",
-                        1
-                    ]
+                    "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
                 },
-                "class_type": "CLIPTextEncodeSDXL"
+                "class_type": "CheckpointLoaderSimple"
             }
         };
 
         // this is how we change parts of the Json
-        promptJson["15"]["inputs"]["text"] = prompt;
-        promptJson["49"]["inputs"]["text_positive"] = prompt;
-        promptJson["50"]["inputs"]["text_l"] = prompt;
+        promptJson["6"]["inputs"]["text"] = prompt;
         const randomInt = Math.floor(Math.random() * 10000001);
         promptJson["10"]["inputs"]["noise_seed"] = randomInt;
         if (cfg != null) {
             promptJson["10"]["inputs"]["cfg"] = cfg;
         }
-        if (style != null) {
-            promptJson["49"]["inputs"]["style"] = style;
-        }
         if (negative != null) {
-            promptJson["16"]["inputs"]["text"] = negative;
-            promptJson["49"]["inputs"]["text_negative"] = negative;
-            promptJson["51"]["inputs"]["text_l"] = negative;
+            promptJson["7"]["inputs"]["text"] = negative;
         }
         // format the date as a string (YYYY-MM-DD_HH-mm-ss)
         // we use this to give an unique name to files

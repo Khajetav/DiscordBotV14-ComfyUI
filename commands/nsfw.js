@@ -11,21 +11,30 @@ module.exports = {
     // Discord slash command stuff
     //
     data: new SlashCommandBuilder()
-        .setName('temp')
+        .setName('nsfw')
         .setDescription('imagines tits')
         .addStringOption(option => option.setName('prompt').setDescription('What you want to imagine').setRequired(true))
+        .addStringOption(option => option.setName('lora').setDescription('Special action').setRequired(false).setAutocomplete(true))
         .addNumberOption(option => option.setName('cfg').setDescription('How strong is the prompt').setRequired(false))
         .addStringOption(option => option.setName('negative').setDescription('The negative prompt').setRequired(false))
         .addStringOption(option => option.setName('style').setDescription('Style of the picture').setRequired(false).setAutocomplete(true)),
     // https://discordjs.guide/slash-commands/autocomplete.html#sending-results
     async autocomplete(interaction) {
         const focusedValue = interaction.options.getFocused();
+        const focusedOption = interaction.options.getFocused(true);
+        let choices;
         const jsonFilePath = 'C:/Users/kajus/Desktop/ComfyUI_windows_portable/ComfyUI/custom_nodes/sdxl_prompt_styler/sdxl_styles.json';
         try {
-            const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
-            const data = JSON.parse(jsonData);
-            const choices = data.map(item => item.name);
             //const choices = ['sai-base', 'sai-3d-model', 'sai-lowpoly'];
+            if (focusedOption.name === 'style') {
+                const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+                const data = JSON.parse(jsonData);
+                choices = data.map(item => item.name);
+            }
+
+            if (focusedOption.name === 'lora') {
+                choices = ['ahegao', 'blowjob', 'chalkdust', 'cum', 'doggy', 'greg', 'icons', 'logo', 'penis', 'titsout', 'topless'];
+            }
             const filtered = choices.filter(choice => choice.startsWith(focusedValue));
             await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
         } catch (error) {
@@ -33,28 +42,49 @@ module.exports = {
         }
     },
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true });
         // prompt is what the user types in Discord
         // can expand this later on to take style too
-        const prompt = interaction.options.getString('prompt');
+        let prompt = interaction.options.getString('prompt');
         const cfg = interaction.options.getNumber('cfg');
         const negative = interaction.options.getString('negative');
         const style = interaction.options.getString('style');
+        const lora = interaction.options.getString('lora');
         console.log('Prompt received...');
         console.log(prompt);
 
         // deferReply is needed for when the loading time is longer than 3 seconds
         // but can edit it only once (probably can edit more than once but need some other code for it)
-        //await interaction.deferReply();
+        await interaction.deferReply();
 
         // promptJson is the message that we send through API
         // we edit this with what the user has sent to the prompt and then it forwards the info to ComfyUI
         let promptJson = {
-            "4": {
+            "3": {
                 "inputs": {
-                    "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
+                    "seed": 448867526498324,
+                    "steps": 20,
+                    "cfg": 8,
+                    "sampler_name": "euler",
+                    "scheduler": "normal",
+                    "denoise": 1,
+                    "model": [
+                        "10",
+                        0
+                    ],
+                    "positive": [
+                        "19",
+                        0
+                    ],
+                    "negative": [
+                        "20",
+                        0
+                    ],
+                    "latent_image": [
+                        "5",
+                        0
+                    ]
                 },
-                "class_type": "CheckpointLoaderSimple"
+                "class_type": "KSampler"
             },
             "5": {
                 "inputs": {
@@ -64,125 +94,61 @@ module.exports = {
                 },
                 "class_type": "EmptyLatentImage"
             },
-            "10": {
-                "inputs": {
-                    "add_noise": "enable",
-                    "noise_seed": 570665753905807,
-                    "steps": 25,
-                    "cfg": 10,
-                    "sampler_name": "euler",
-                    "scheduler": "normal",
-                    "start_at_step": 0,
-                    "end_at_step": 20,
-                    "return_with_leftover_noise": "enable",
-                    "model": [
-                        "4",
-                        0
-                    ],
-                    "positive": [
-                        "50",
-                        0
-                    ],
-                    "negative": [
-                        "51",
-                        0
-                    ],
-                    "latent_image": [
-                        "5",
-                        0
-                    ]
-                },
-                "class_type": "KSamplerAdvanced"
-            },
-            "11": {
-                "inputs": {
-                    "add_noise": "disable",
-                    "noise_seed": 0,
-                    "steps": 25,
-                    "cfg": 8,
-                    "sampler_name": "euler",
-                    "scheduler": "normal",
-                    "start_at_step": 20,
-                    "end_at_step": 10000,
-                    "return_with_leftover_noise": "disable",
-                    "model": [
-                        "12",
-                        0
-                    ],
-                    "positive": [
-                        "15",
-                        0
-                    ],
-                    "negative": [
-                        "16",
-                        0
-                    ],
-                    "latent_image": [
-                        "10",
-                        0
-                    ]
-                },
-                "class_type": "KSamplerAdvanced"
-            },
-            "12": {
-                "inputs": {
-                    "ckpt_name": "sd_xl_refiner_1.0.safetensors"
-                },
-                "class_type": "CheckpointLoaderSimple"
-            },
-            "15": {
-                "inputs": {
-                    "text": "positive prompt",
-                    "clip": [
-                        "12",
-                        1
-                    ]
-                },
-                "class_type": "CLIPTextEncode"
-            },
-            "16": {
-                "inputs": {
-                    "text": "",
-                    "clip": [
-                        "12",
-                        1
-                    ]
-                },
-                "class_type": "CLIPTextEncode"
-            },
-            "17": {
+            "8": {
                 "inputs": {
                     "samples": [
-                        "11",
+                        "3",
                         0
                     ],
                     "vae": [
-                        "12",
+                        "15",
                         2
                     ]
                 },
                 "class_type": "VAEDecode"
             },
-            "19": {
+            "9": {
                 "inputs": {
                     "filename_prefix": "ComfyUI",
                     "images": [
-                        "17",
+                        "8",
                         0
                     ]
                 },
                 "class_type": "SaveImage"
             },
-            "49": {
+            "10": {
+                "inputs": {
+                    "lora_name": "chalkdust.safetensors",
+                    "strength_model": 1,
+                    "strength_clip": 1,
+                    "model": [
+                        "15",
+                        0
+                    ],
+                    "clip": [
+                        "15",
+                        1
+                    ]
+                },
+                "class_type": "LoraLoader"
+            },
+            "15": {
+                "inputs": {
+                    "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
+                },
+                "class_type": "CheckpointLoaderSimple"
+            },
+            "18": {
                 "inputs": {
                     "text_positive": "positive prompt",
-                    "text_negative": "",
+                    "text_negative": "negative prompt",
                     "style": "sai-base",
                     "log_prompt": "No"
                 },
                 "class_type": "SDXLPromptStyler"
             },
-            "50": {
+            "19": {
                 "inputs": {
                     "width": 1024,
                     "height": 1024,
@@ -191,18 +157,18 @@ module.exports = {
                     "target_width": 1024,
                     "target_height": 1024,
                     "text_g": [
-                        "49",
+                        "18",
                         0
                     ],
                     "text_l": "positive prompt",
                     "clip": [
-                        "4",
+                        "10",
                         1
                     ]
                 },
                 "class_type": "CLIPTextEncodeSDXL"
             },
-            "51": {
+            "20": {
                 "inputs": {
                     "width": 1024,
                     "height": 1024,
@@ -211,12 +177,12 @@ module.exports = {
                     "target_width": 1024,
                     "target_height": 1024,
                     "text_g": [
-                        "49",
+                        "18",
                         1
                     ],
-                    "text_l": "",
+                    "text_l": "negative prompt",
                     "clip": [
-                        "4",
+                        "10",
                         1
                     ]
                 },
@@ -225,21 +191,68 @@ module.exports = {
         };
 
         // this is how we change parts of the Json
-        promptJson["15"]["inputs"]["text"] = prompt;
-        promptJson["49"]["inputs"]["text_positive"] = prompt;
-        promptJson["50"]["inputs"]["text_l"] = prompt;
+        switch (lora) {
+            case 'doggy':
+                prompt += ", dggy, girl, pov, penis";
+                promptJson["10"]["inputs"]["lora_name"] = "doggy.safetensors";
+                break;
+            case 'blowjob':
+                prompt += ", woman, sucking a cock";
+                promptJson["10"]["inputs"]["lora_name"] = "blowjob.safetensors";
+                break;
+            case 'cum':
+                prompt += ", woman, cum on face";
+                promptJson["10"]["inputs"]["lora_name"] = "cum.safetensors";
+                break;
+            case 'penis':
+                prompt += ", penisart, penis face, ball sack, hairy balls, penis veins, outlined, eyes, mouth, tail, arms, legs, hands, feet";
+                promptJson["10"]["inputs"]["lora_name"] = "penis.safetensors";
+                break;
+            case 'ahegao':
+                prompt += ", tongue out, ahegao, drool";
+                promptJson["10"]["inputs"]["lora_name"] = "ahegao.safetensors";
+                break;
+            case 'topless':
+                prompt += ", topless woman breasts";
+                promptJson["10"]["inputs"]["lora_name"] = "topless.safetensors";
+                break;
+            case 'titsout':
+                prompt += ", boutx clothes";
+                promptJson["10"]["inputs"]["lora_name"] = "titsout.safetensors";
+                break;
+            case 'greg':
+                prompt += ", greg rutkowski";
+                promptJson["10"]["inputs"]["lora_name"] = "greg.safetensors";
+                break;
+            case 'chalkdust':
+                prompt += ", chalkdust";
+                promptJson["10"]["inputs"]["lora_name"] = "chalkdust.safetensors";
+                break;
+            case 'icons':
+                prompt += ", icredm";
+                promptJson["10"]["inputs"]["lora_name"] = "icons.safetensors";
+                break;
+            case 'logo':
+                prompt += ", LogoRedAF";
+                promptJson["10"]["inputs"]["lora_name"] = "logo.safetensors";
+                break;
+            default:
+                prompt = prompt;
+        }
+
+        promptJson["18"]["inputs"]["text_positive"] = prompt;
+        promptJson["19"]["inputs"]["text_l"] = prompt;
         const randomInt = Math.floor(Math.random() * 10000001);
-        promptJson["10"]["inputs"]["noise_seed"] = randomInt;
+        promptJson["3"]["inputs"]["seed"] = randomInt;
         if (cfg != null) {
-            promptJson["10"]["inputs"]["cfg"] = cfg;
+            promptJson["3"]["inputs"]["cfg"] = cfg;
         }
         if (style != null) {
-            promptJson["49"]["inputs"]["style"] = style;
+            promptJson["18"]["inputs"]["style"] = style;
         }
         if (negative != null) {
-            promptJson["16"]["inputs"]["text"] = negative;
-            promptJson["49"]["inputs"]["text_negative"] = negative;
-            promptJson["51"]["inputs"]["text_l"] = negative;
+            promptJson["18"]["inputs"]["text_negative"] = negative;
+            promptJson["20"]["inputs"]["text_l"] = negative;
         }
         // format the date as a string (YYYY-MM-DD_HH-mm-ss)
         // we use this to give an unique name to files
@@ -255,7 +268,7 @@ module.exports = {
                     .padStart(2, '0')}-${currentDate.getMilliseconds().toString().padStart(3, '0')}`;
         let filename = formattedDate;
         // set the filename prefix
-        promptJson["19"]["inputs"]["filename_prefix"] = filename;
+        promptJson["9"]["inputs"]["filename_prefix"] = filename;
         // TODO: make relative paths
         // TODO: move project out of desktop lmao
         const folderPath = 'C:\\Users\\kajus\\Desktop\\ComfyUI_windows_portable\\ComfyUI\\output';
