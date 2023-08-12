@@ -1,0 +1,577 @@
+{
+    "imagine": {
+                "4": {
+            "inputs": {
+                "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
+            },
+            "class_type": "CheckpointLoaderSimple"
+        },
+        "5": {
+            "inputs": {
+                "width": 1024,
+                "height": 1024,
+                "batch_size": 1
+            },
+            "class_type": "EmptyLatentImage"
+        },
+        "10": {
+            "inputs": {
+                "add_noise": "enable",
+                "noise_seed": 570665753905807,
+                "steps": 25,
+                "cfg": 10,
+                "sampler_name": "euler",
+                "scheduler": "normal",
+                "start_at_step": 0,
+                "end_at_step": 20,
+                "return_with_leftover_noise": "enable",
+                "model": [
+                    "4",
+                    0
+                ],
+                "positive": [
+                    "50",
+                    0
+                ],
+                "negative": [
+                    "51",
+                    0
+                ],
+                "latent_image": [
+                    "5",
+                    0
+                ]
+            },
+            "class_type": "KSamplerAdvanced"
+        },
+        "11": {
+            "inputs": {
+                "add_noise": "disable",
+                "noise_seed": 0,
+                "steps": 25,
+                "cfg": 8,
+                "sampler_name": "euler",
+                "scheduler": "normal",
+                "start_at_step": 20,
+                "end_at_step": 10000,
+                "return_with_leftover_noise": "disable",
+                "model": [
+                    "12",
+                    0
+                ],
+                "positive": [
+                    "15",
+                    0
+                ],
+                "negative": [
+                    "16",
+                    0
+                ],
+                "latent_image": [
+                    "10",
+                    0
+                ]
+            },
+            "class_type": "KSamplerAdvanced"
+        },
+        "12": {
+            "inputs": {
+                "ckpt_name": "sd_xl_refiner_1.0.safetensors"
+            },
+            "class_type": "CheckpointLoaderSimple"
+        },
+        "15": {
+            "inputs": {
+                "text": "positive prompt",
+                "clip": [
+                    "12",
+                    1
+                ]
+            },
+            "class_type": "CLIPTextEncode"
+        },
+        "16": {
+            "inputs": {
+                "text": "",
+                "clip": [
+                    "12",
+                    1
+                ]
+            },
+            "class_type": "CLIPTextEncode"
+        },
+        "17": {
+            "inputs": {
+                "samples": [
+                    "11",
+                    0
+                ],
+                "vae": [
+                    "12",
+                    2
+                ]
+            },
+            "class_type": "VAEDecode"
+        },
+        "19": {
+            "inputs": {
+                "filename_prefix": "ComfyUI",
+                "images": [
+                    "17",
+                    0
+                ]
+            },
+            "class_type": "SaveImage"
+        },
+        "49": {
+            "inputs": {
+                "text_positive": "positive prompt",
+                "text_negative": "",
+                "style": "sai-base",
+                "log_prompt": "No"
+            },
+            "class_type": "SDXLPromptStyler"
+        },
+        "50": {
+            "inputs": {
+                "width": 1024,
+                "height": 1024,
+                "crop_w": 0,
+                "crop_h": 0,
+                "target_width": 1024,
+                "target_height": 1024,
+                "text_g": [
+                    "49",
+                    0
+                ],
+                "text_l": "positive prompt",
+                "clip": [
+                    "4",
+                    1
+                ]
+            },
+            "class_type": "CLIPTextEncodeSDXL"
+        },
+        "51": {
+            "inputs": {
+                "width": 1024,
+                "height": 1024,
+                "crop_w": 0,
+                "crop_h": 0,
+                "target_width": 1024,
+                "target_height": 1024,
+                "text_g": [
+                    "49",
+                    1
+                ],
+                "text_l": "",
+                "clip": [
+                    "4",
+                    1
+                ]
+            },
+            "class_type": "CLIPTextEncodeSDXL"
+        }
+    },
+
+
+
+
+
+
+    "nsfw": {
+                "3": {
+            "inputs": {
+                "seed": 448867526498324,
+                "steps": 20,
+                "cfg": 8,
+                "sampler_name": "euler",
+                "scheduler": "normal",
+                "denoise": 1,
+                "model": [
+                    "10",
+                    0
+                ],
+                "positive": [
+                    "19",
+                    0
+                ],
+                "negative": [
+                    "20",
+                    0
+                ],
+                "latent_image": [
+                    "5",
+                    0
+                ]
+            },
+            "class_type": "KSampler"
+        },
+        "5": {
+            "inputs": {
+                "width": 1024,
+                "height": 1024,
+                "batch_size": 1
+            },
+            "class_type": "EmptyLatentImage"
+        },
+        "8": {
+            "inputs": {
+                "samples": [
+                    "3",
+                    0
+                ],
+                "vae": [
+                    "15",
+                    2
+                ]
+            },
+            "class_type": "VAEDecode"
+        },
+        "9": {
+            "inputs": {
+                "filename_prefix": "ComfyUI",
+                "images": [
+                    "8",
+                    0
+                ]
+            },
+            "class_type": "SaveImage"
+        },
+        "10": {
+            "inputs": {
+                "lora_name": "chalkdust.safetensors",
+                "strength_model": 1,
+                "strength_clip": 1,
+                "model": [
+                    "15",
+                    0
+                ],
+                "clip": [
+                    "15",
+                    1
+                ]
+            },
+            "class_type": "LoraLoader"
+        },
+        "15": {
+            "inputs": {
+                "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
+            },
+            "class_type": "CheckpointLoaderSimple"
+        },
+        "18": {
+            "inputs": {
+                "text_positive": "positive prompt",
+                "text_negative": "negative prompt",
+                "style": "sai-base",
+                "log_prompt": "No"
+            },
+            "class_type": "SDXLPromptStyler"
+        },
+        "19": {
+            "inputs": {
+                "width": 1024,
+                "height": 1024,
+                "crop_w": 0,
+                "crop_h": 0,
+                "target_width": 1024,
+                "target_height": 1024,
+                "text_g": [
+                    "18",
+                    0
+                ],
+                "text_l": "positive prompt",
+                "clip": [
+                    "10",
+                    1
+                ]
+            },
+            "class_type": "CLIPTextEncodeSDXL"
+        },
+        "20": {
+            "inputs": {
+                "width": 1024,
+                "height": 1024,
+                "crop_w": 0,
+                "crop_h": 0,
+                "target_width": 1024,
+                "target_height": 1024,
+                "text_g": [
+                    "18",
+                    1
+                ],
+                "text_l": "negative prompt",
+                "clip": [
+                    "10",
+                    1
+                ]
+            },
+            "class_type": "CLIPTextEncodeSDXL"
+        }
+    },
+
+
+
+
+
+    "pixelart": {
+                   "5": {
+                "inputs": {
+                    "width": 1024,
+                    "height": 1024,
+                    "batch_size": 1
+                },
+                "class_type": "EmptyLatentImage"
+            },
+            "6": {
+                "inputs": {
+                    "text": "tits,naked women (flat shading:1.2), (minimalist:1.4)",
+                    "clip": [
+                        "53",
+                        1
+                    ]
+                },
+                "class_type": "CLIPTextEncode"
+            },
+            "7": {
+                "inputs": {
+                    "text": "text, watermark, blurry, deformed, depth of field, realistic, 3d render, outline",
+                    "clip": [
+                        "53",
+                        1
+                    ]
+                },
+                "class_type": "CLIPTextEncode"
+            },
+            "10": {
+                "inputs": {
+                    "add_noise": "enable",
+                    "noise_seed": 48857274872740,
+                    "steps": 20,
+                    "cfg": 8,
+                    "sampler_name": "euler_ancestral",
+                    "scheduler": "normal",
+                    "start_at_step": 0,
+                    "end_at_step": 20,
+                    "return_with_leftover_noise": "enable",
+                    "model": [
+                        "53",
+                        0
+                    ],
+                    "positive": [
+                        "6",
+                        0
+                    ],
+                    "negative": [
+                        "7",
+                        0
+                    ],
+                    "latent_image": [
+                        "5",
+                        0
+                    ]
+                },
+                "class_type": "KSamplerAdvanced"
+            },
+            "17": {
+                "inputs": {
+                    "samples": [
+                        "10",
+                        0
+                    ],
+                    "vae": [
+                        "57",
+                        2
+                    ]
+                },
+                "class_type": "VAEDecode"
+            },
+            "19": {
+                "inputs": {
+                    "filename_prefix": "ComfyUI",
+                    "images": [
+                        "17",
+                        0
+                    ]
+                },
+                "class_type": "SaveImage"
+            },
+            "53": {
+                "inputs": {
+                    "lora_name": "pixel-art-xl-v1.1.safetensors",
+                    "strength_model": 1.0000000000000002,
+                    "strength_clip": 1,
+                    "model": [
+                        "57",
+                        0
+                    ],
+                    "clip": [
+                        "57",
+                        1
+                    ]
+                },
+                "class_type": "LoraLoader"
+            },
+            "57": {
+                "inputs": {
+                    "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
+                },
+                "class_type": "CheckpointLoaderSimple"
+            }
+        },
+
+
+
+
+    "imgtoimg": {
+                "1": {
+            "inputs": {
+                "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
+            },
+            "class_type": "CheckpointLoaderSimple"
+        },
+        "2": {
+            "inputs": {
+                "width": 1024,
+                "height": 1024,
+                "crop_w": 0,
+                "crop_h": 0,
+                "target_width": 1024,
+                "target_height": 1024,
+                "text_g": [
+                    "20",
+                    0
+                ],
+                "text_l": "positive prompt",
+                "clip": [
+                    "1",
+                    1
+                ]
+            },
+            "class_type": "CLIPTextEncodeSDXL"
+        },
+        "4": {
+            "inputs": {
+                "width": 1024,
+                "height": 1024,
+                "crop_w": 0,
+                "crop_h": 0,
+                "target_width": 1024,
+                "target_height": 1024,
+                "text_g": [
+                    "20",
+                    1
+                ],
+                "text_l": "negative prompt",
+                "clip": [
+                    "1",
+                    1
+                ]
+            },
+            "class_type": "CLIPTextEncodeSDXL"
+        },
+        "6": {
+            "inputs": {
+                "seed": 304882005656735,
+                "steps": 20,
+                "cfg": 8,
+                "sampler_name": "euler",
+                "scheduler": "normal",
+                "denoise": 0.75,
+                "model": [
+                    "1",
+                    0
+                ],
+                "positive": [
+                    "2",
+                    0
+                ],
+                "negative": [
+                    "4",
+                    0
+                ],
+                "latent_image": [
+                    "13",
+                    0
+                ]
+            },
+            "class_type": "KSampler"
+        },
+        "8": {
+            "inputs": {
+                "samples": [
+                    "6",
+                    0
+                ],
+                "vae": [
+                    "1",
+                    2
+                ]
+            },
+            "class_type": "VAEDecode"
+        },
+        "9": {
+            "inputs": {
+                "images": [
+                    "8",
+                    0
+                ]
+            },
+            "class_type": "PreviewImage"
+        },
+        "11": {
+            "inputs": {
+                "image": "2023-07-31_22-56-22-353.png",
+                "choose file to upload": "image"
+            },
+            "class_type": "LoadImage"
+        },
+        "12": {
+            "inputs": {
+                "side_length": 1024,
+                "side": "Longest",
+                "upscale_method": "nearest-exact",
+                "crop": "disabled",
+                "image": [
+                    "11",
+                    0
+                ]
+            },
+            "class_type": "Image scale to side"
+        },
+        "13": {
+            "inputs": {
+                "pixels": [
+                    "12",
+                    0
+                ],
+                "vae": [
+                    "1",
+                    2
+                ]
+            },
+            "class_type": "VAEEncode"
+        },
+        "14": {
+            "inputs": {
+                "filename_prefix": "ComfyUI",
+                "images": [
+                    "8",
+                    0
+                ]
+            },
+            "class_type": "SaveImage"
+        },
+        "20": {
+            "inputs": {
+                "text_positive": "positive prompt",
+                "text_negative": "negative prompt",
+                "style": "sai-base",
+                "log_prompt": "No"
+            },
+            "class_type": "SDXLPromptStyler"
+        }
+    
+    }
+}

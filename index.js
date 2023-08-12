@@ -10,13 +10,13 @@ const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 fs.writeFileSync('pidfile', process.pid.toString());
 for (const file of commandFiles) {
-	const filePath = path.join(commandsPath, file);
-	const command = require(filePath);
-	client.commands.set(command.data.name, command);
+    const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
+    client.commands.set(command.data.name, command);
 }
 
 client.once(Events.ClientReady, () => {
-	console.log('Ready!');
+    console.log('Ready!');
 });
 
 client.on(Events.InteractionCreate, async interaction => {
@@ -42,6 +42,7 @@ client.on(Events.InteractionCreate, async interaction => {
     // Check if it's a chat input command interaction
     if (interaction.isChatInputCommand()) {
         const command = client.commands.get(interaction.commandName);
+        //console.log(command);
 
         if (!command) {
             console.log('Command was not found');
@@ -51,18 +52,22 @@ client.on(Events.InteractionCreate, async interaction => {
         try {
             await command.execute(interaction);
         } catch (error) {
-            //
-            // REPLY ERROR HANDLING
-            // when a reply fails due to various reasons
-            // TODO: add more handlings
-            //
-            console.error(error);
+            console.error('Error:', error);
 
-            // Determine the appropriate response method based on whether the interaction has been replied or deferred.
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+            if (!interaction.deleted) {
+                if (error instanceof CommandError) {
+                    if (interaction.replied || interaction.deferred) {
+                        await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+                    } else {
+                        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+                    }
+                }
+                else {
+                    console.error('An unexpected error occurred:', error);
+                    await interaction.reply({ content: 'An unexpected error occurred while processing your request!', ephemeral: true });
+                }
             } else {
-                await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+                console.log('Interaction was deleted; unable to send error message.');
             }
         }
     }
