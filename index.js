@@ -19,16 +19,16 @@ for (const file of commandFiles) {
 // hosting everything locally, no replit
 //
 // -----------------------------------------------
-// configExample.json has examples of what you need
-// token = this is your bot's password, found in https://discord.com/developers/applications
-// clientId = this is your application ID found in https://discord.com/developers/applications under your bot,
-// something like "1045437306321238123",
-// guildId = your server's ID, you can get this by enabling developer tools on Discord and right clicking
-// the server you want and selecting copy server ID,
-// outputPath = where your ComfyUI will store physical copies of images that it generates
-// inputPath = where your ComfyUI will take the images from for imgtoimg processing
-// jsonFilePath = custom node for ComfyUI that allows to use SDXL style prompts
-// I have added some of mine there too
+ //configExample.json has examples of what you need
+ //token = this is your bot's password, found in https://discord.com/developers/applications
+ //clientId = this is your application ID found in https://discord.com/developers/applications under your bot,
+ //something like "1045437306321238123",
+ //guildId = your server's ID, you can get this by enabling developer tools on Discord and right clicking
+ //the server you want and selecting copy server ID,
+ //outputPath = where your ComfyUI will store physical copies of images that it generates
+ //inputPath = where your ComfyUI will take the images from for imgtoimg processing
+ //jsonFilePath = custom node for ComfyUI that allows to use SDXL style prompts
+ //I have added some of mine there too
 //
 const { token } = require('./config.json');
 fs.writeFileSync('pidfile', process.pid.toString());

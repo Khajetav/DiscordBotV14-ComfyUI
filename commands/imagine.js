@@ -2,7 +2,6 @@ const { SlashCommandBuilder } = require('discord.js');
 const { processPromptAndGrabImage, autocompleteGlobals } = require('../utils.js');
 const config = require('../config.json');
 const outputPath = config.outputPath;
-
 //
 // /imagine
 // fairly standard SDXL model with a refiner

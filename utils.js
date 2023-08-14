@@ -3,6 +3,11 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { jsonFilePath } = require('./config.json');
+const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+const data = JSON.parse(jsonData);
+const styleChoices = data.map(item => item.name);
+const loraChoices = ['nsfw-cowgirl', 'nsfw-flashing', 'nsfw-bigass', 'nsfw-topless', 'nsfw-doggy', 'nsfw-ahegao', 'nsfw-penis', 'nsfw-cum', 'nsfw-blowjob', 'nsfw-titsout',
+    'sfw-ussrart', 'sfw-gloomy', 'sfw-timjacobs', 'sfw-wlop', 'sfw-chibi', 'sfw-foodpets', 'sfw-logo', 'sfw-icons', 'sfw-chalkdust', 'sfw-greg', 'sfw-pixelart'];
 //
 // UTILITIES FILE
 // this is where I store most of my functions
@@ -13,6 +18,45 @@ const { jsonFilePath } = require('./config.json');
 const debug = false; 
 
 //
+// autocompleteGlobals
+// handles the Discord autocompletion feature
+// but it's fairly expensive on the API requests so idk if I should keep it
+// but it's really nice to have
+//
+async function autocompleteGlobals(interaction) {
+    const focusedValue = interaction.options.getFocused();
+    const focusedOption = interaction.options.getFocused(true);
+    let choices;
+    try {
+
+        if (focusedOption.name === 'style') {
+            choices = styleChoices;
+        }
+
+        if (focusedOption.name === 'lora') {
+            choices = loraChoices;
+        }
+        const filtered = choices.filter(choice => choice.startsWith(focusedValue));
+
+        let options;
+        // Discord can only display 25 options at a time, otherwise throws an error
+        // need to filter the length to 25
+        if (filtered.length > 25) {
+            options = filtered.slice(0, 25);
+        } else {
+            options = filtered;
+        }
+
+        await interaction.respond(
+            options.map(choice => ({ name: choice, value: choice })),
+        );
+        await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
+    } catch (error) {
+        console.error('Error reading/parsing the JSON file:', error);
+    }
+}
+
+//
 // processPromptAndGrabImage
 // the first function that gets run
 // jsonBuilder formats the prompt to be sent to ComfyUI
@@ -21,6 +65,9 @@ const debug = false;
 // when there is more than one request at a time
 //
 async function processPromptAndGrabImage(outputPath, interaction, promptContent, originalFilePath) {
+    if (autocorrect(interaction) === 0) {
+        return;
+    }
     const [promptJson, filename] = jsonBuilder(interaction, originalFilePath);
     debugLog("\n\n processPromptAndGrabImage START \n\n");
     debugLog("interaction.commandName:", interaction.commandName);
@@ -31,6 +78,33 @@ async function processPromptAndGrabImage(outputPath, interaction, promptContent,
     debugLog("\n\n END processPromptAndGrabImage \n\n");
 }
 
+//
+// autocorrect
+// used for fixing user typed mistakes so that they don't crash the bot
+// user gets yelled at for mistyping
+//
+function autocorrect(interaction) {
+    const loraOption = interaction.options.getString('lora');
+    const styleOption = interaction.options.getString('style');
+    try {
+        if (styleOption && !styleChoices.includes(styleOption)) {
+            interaction.deleteReply();
+            interaction.channel.send({
+                content: `<@${interaction.user.id}>` + ", you've selected an invalid style!",
+            });
+            return 0;
+        }
+        else if (loraOption && !loraChoices.includes(loraOption)) {
+            interaction.deleteReply();
+            interaction.channel.send({
+                content: `<@${interaction.user.id}>` + ", you've selected an invalid lora!",
+            });
+            return 0;
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
 //
 // jsonBuilder
 // ComfyUI needs workflows to know what it needs to do
@@ -411,47 +485,6 @@ async function embedReply(interaction, attachment, promptJson, outputPath, filen
     debugLog("\n\n embedReply END \n\n");
 }
 
-//
-// autocompleteGlobals
-// handles the Discord autocompletion feature
-// but it's fairly expensive on the API requests so idk if I should keep it
-// but it's really nice to have
-//
-async function autocompleteGlobals(interaction) {
-    const focusedValue = interaction.options.getFocused();
-    const focusedOption = interaction.options.getFocused(true);
-    let choices;
-   
-    try {
-        if (focusedOption.name === 'style') {
-            const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
-            const data = JSON.parse(jsonData);
-            choices = data.map(item => item.name);
-        }
-
-        if (focusedOption.name === 'lora') {
-            choices = ['nsfw-cowgirl', 'nsfw-flashing', 'nsfw-bigass', 'nsfw-topless', 'nsfw-doggy', 'nsfw-ahegao', 'nsfw-penis', 'nsfw-cum', 'nsfw-blowjob', 'nsfw-titsout',
-                'sfw-ussrart', 'sfw-gloomy', 'sfw-timjacobs', 'sfw-wlop', 'sfw-chibi', 'sfw-foodpets', 'sfw-logo', 'sfw-icons', 'sfw-chalkdust', 'sfw-greg', 'sfw-pixelart'];
-        }
-        const filtered = choices.filter(choice => choice.startsWith(focusedValue));
-
-        let options;
-        // Discord can only display 25 options at a time, otherwise throws an error
-        // need to filter the length to 25
-        if (filtered.length > 25) {
-            options = filtered.slice(0, 25);
-        } else {
-            options = filtered;
-        }
-
-        await interaction.respond(
-            options.map(choice => ({ name: choice, value: choice })),
-        );
-        await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
-    } catch (error) {
-        console.error('Error reading/parsing the JSON file:', error);
-    }
-}
 
 //
 // HELPER FUNCTIONS
