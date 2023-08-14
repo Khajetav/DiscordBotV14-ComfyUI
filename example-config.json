@@ -1,0 +1,8 @@
+{
+  "token": "AAaaAAaaaAAaAaAaAAa.BbbBbBBBBBBBB.CCccCcCCCcCCC",
+  "clientId": "1045437306321238123",
+  "guildId": "1012338490123431234",
+  "outputPath": "C:\\Users\\kajus\\Desktop\\ComfyUI_windows_portable\\ComfyUI\\output",
+  "inputPath": "C:\\Users\\kajus\\Desktop\\ComfyUI_windows_portable\\ComfyUI\\input\\",
+  "jsonFilePath": "C:\\Users\\kajus\\Desktop\\ComfyUI_windows_portable\\ComfyUI\\custom_nodes\\sdxl_prompt_styler\\sdxl_styles.json"
+}

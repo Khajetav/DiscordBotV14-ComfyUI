@@ -1,7 +1,13 @@
 const { SlashCommandBuilder } = require('discord.js');
-const fs = require('fs'); 
-const { ProcessPromptAndGrabImage } = require('../utils.js');
+const { processPromptAndGrabImage, autocompleteGlobals } = require('../utils.js');
+const config = require('../config.json');
+const outputPath = config.outputPath;
 
+//
+// /imagine
+// fairly standard SDXL model with a refiner
+// with added SDXL styles (copy of their Discord bot, pretty much)
+//
 module.exports = {
     //
     // Discord slash command stuff
@@ -13,24 +19,22 @@ module.exports = {
         .addNumberOption(option => option.setName('cfg').setDescription('How strong is the prompt').setRequired(false))
         .addStringOption(option => option.setName('negative').setDescription('The negative prompt').setRequired(false))
         .addStringOption(option => option.setName('style').setDescription('Style of the picture').setRequired(false).setAutocomplete(true)),
-    // https://discordjs.guide/slash-commands/autocomplete.html#sending-results
+    //https://discordjs.guide/slash-commands/autocomplete.html#sending-results
+    //
+    // AUTOCOMPLETE HANDLING
+    // may be expensive on the API requests, not sure, but is fairly easy to turn off
+    // above turn setAutocomplete(true) into (false)
+    // 
     async autocomplete(interaction) {
-        const focusedValue = interaction.options.getFocused();
-        const jsonFilePath = 'C:/Users/kajus/Desktop/ComfyUI_windows_portable/ComfyUI/custom_nodes/sdxl_prompt_styler/sdxl_styles.json';
-        try {
-            const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
-            const data = JSON.parse(jsonData);
-            const choices = data.map(item => item.name);
-            //const choices = ['sai-base', 'sai-3d-model', 'sai-lowpoly'];
-            const filtered = choices.filter(choice => choice.startsWith(focusedValue));
-            await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
-        } catch (error) {
-            console.error('Error reading/parsing the JSON file:', error);
-        }
+        autocompleteGlobals(interaction);
     },
+    //
+    // IMAGE PROCESSING LOGIC
+    // interaction.deferReply() makes it so that Discord informs the user that the bot is thinking
+    // if an interaction takes longer than 3 seconds then Discord forgets it, needs deferReply for longer ones
+    // 
     async execute(interaction) {
         await interaction.deferReply();
-        const folderPath = 'C:\\Users\\kajus\\Desktop\\ComfyUI_windows_portable\\ComfyUI\\output';
-        ProcessPromptAndGrabImage(folderPath, interaction);
+        processPromptAndGrabImage(outputPath, interaction);
     }
 }

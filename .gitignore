@@ -11,6 +11,9 @@ old
 *.user
 *.userosscache
 *.sln.docstates
+ratelimit.js
+run - Copy.bat
+*.log
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

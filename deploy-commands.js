@@ -3,6 +3,10 @@ const { clientId, guildId, token } = require('./config.json');
 const fs = require('node:fs');
 const path = require('node:path');
 
+//
+// DISCORD'S COMMAND DEPLOYER
+// you need to run this every time you modify a slash command
+//
 const commands = [];
 // Grab all the command files from the commands directory you created earlier
 const commandsPath = path.join(__dirname, 'commands');

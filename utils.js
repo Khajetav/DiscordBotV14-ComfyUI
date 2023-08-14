@@ -1,196 +1,50 @@
 ﻿const { AttachmentBuilder, SlashCommandBuilder, EmbedBuilder, Client, Intents, PermissionBitField, ButtonStyle, ButtonBuilder, ActionRowBuilder } = require('discord.js');
 const axios = require('axios');
-const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
-const { randomInt } = require('crypto');
-const debug = false;
-async function ProcessPromptAndGrabImage(folderPath, interaction, promptContent, originalFilePath) {
-    console.log("PPAGI Original file path: " + originalFilePath);
+const { jsonFilePath } = require('./config.json');
+//
+// UTILITIES FILE
+// this is where I store most of my functions
+// and handle inner API calls between the bot and ComfyUI
+//
+// turn debug into true if you want to see additional console logging
+//
+const debug = false; 
+
+//
+// processPromptAndGrabImage
+// the first function that gets run
+// jsonBuilder formats the prompt to be sent to ComfyUI
+// then waitForImageAndSend turns on a while loop that checks the output folder for the generated image
+// you can theoretically wait for events but I couldn't figure out how to reliably listen to them
+// when there is more than one request at a time
+//
+async function processPromptAndGrabImage(outputPath, interaction, promptContent, originalFilePath) {
+    const [promptJson, filename] = jsonBuilder(interaction, originalFilePath);
+    debugLog("\n\n processPromptAndGrabImage START \n\n");
     debugLog("interaction.commandName:", interaction.commandName);
-    const [promptJson, filename] = JsonBuilder(interaction, originalFilePath);
-    debugLog("\n\n START PROCESSPROMPTANDGRABIMAGE \n\n");
-    debugLog("/----------/");
-    debugLog("/----------/");
-    debugLog("/----------/");
-    debugLog(JSON.stringify(promptJson, null, 2));
-    debugLog("promptJson: " + promptJson);
-    debugLog("folderPath: " + folderPath);
-    debugLog("filename: " + filename);
-    debugLog("interaction: " + interaction);
-    debugLog("/----------/");
-    debugLog("/----------/");
-    debugLog("/----------/");
-    debugLog('ProcessPromptAndGrabImage...');
-    debugLog('Sending to axios...');
-
+    debugLog('processPromptAndGrabImage...');
+    debugLog('Sending the prompt to ComfyUI...');
     const response = await axios.post('http://127.0.0.1:8188/prompt', { prompt: promptJson });
-
-    await waitForImageAndSend(interaction, promptJson, folderPath, filename, promptContent, originalFilePath);
-
-    //ws.on('message', async (data) => {
-    //    debugLog("Parsing the JSON...");
-    //    const message = JSON.parse(data);
-    //    debugLog('Message:', message);
-    //    debugLog('message.type:', message.type, " message.data.value:", message.data.value, " message.data.max:", message.data.max);
-    //    if (message.type === 'status') {
-    //        debugLog('Exec info:', message.data.status.exec_info);
-    //        if (message.data.status.exec_info.queue_remaining === 0) {
-    //            debugLog('Queue is empty...');
-    //            debugLog('Trying to find the image with matching filename...');
-    //            await wait(1000);
-    //            debugLog('filename:', filename);
-    //            debugLog('folderPath:', folderPath);
-
-    //                ws.close();
-    //            } else {
-    //                debugLog('File not found in the output folder.');
-    //            }
-    //        }
-    //    }
-    //});
-
-    //ws.on('error', (error) => {
-    //    console.error('Websocket error:', error);
-    //});
-
-    //ws.on('close', () => {
-    //    debugLog('Websocket closed.');
-    //});
-    debugLog("\n\n END PROCESSPROMPTANDGRABIMAGE \n\n");
-}
-async function EmbedReply(interaction, attachment, promptJson, folderPath, filename, originalPromptContent, originalAttachment, originalFilePath) {
-    debugLog("\n\n START EMBEDREPLY \n\n");
-    debugLog("EmbedReply...");
-    let promptContent = PromptNameBuilder(interaction);
-    if (originalPromptContent) {
-        debugLog("We are in a repeat...");
-        promptContent = originalPromptContent;
-    }
-    debugLog("Attachment inside the EmbedReply: " + attachment);
-    //await interaction.deferReply({ ephemeral: true });
-    //const prompt = interaction.options.getString('prompt');
-    //debugLog("Prompt entered:" + prompt);
-    //let fields = [
-    //    { name: "this is also a test", value: "example value" },
-    //];
-    const currentDate = new Date();
-    const uniqueId = (currentDate.getHours() * 3600000) + (currentDate.getMinutes() * 60000) + (currentDate.getSeconds() * 1000) + currentDate.getMilliseconds();
-    const button = new ActionRowBuilder()
-        .addComponents
-        (
-            new ButtonBuilder()
-                .setCustomId('repeat-' + uniqueId)
-                .setEmoji('🔄')
-                .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-                .setCustomId('dm-' + uniqueId)
-                .setEmoji('📩')
-                //.setEmoji(`:envelope:`)
-                .setStyle(ButtonStyle.Secondary),
-    )
-
-    try {
-        debugLog("Deleting pending reply...");
-        await interaction.deleteReply();
-    }
-    catch (error) {
-        debugLog(error);
-    }
-    //const followUpMessage = await interaction.followUp(
-    //await interaction.user.send(
-    debugLog("Sending a message...");
-    let filesArray = [attachment];
-    if (originalAttachment) {
-        filesArray.push(originalAttachment);
-    }
-    await interaction.channel.send(
-        {
-            content: `<@${interaction.user.id}>` + ", your image is here!",
-            embeds: [
-                new EmbedBuilder()
-                    .setTitle(promptContent)
-                    .setImage('attachment://image.png'),
-            ],
-            components: [button],
-            files: filesArray,
-        }
-    );
-    //const channel = interaction.channel;
-    //const message = await channel.messages.fetch(followUpMessage.id);
-    //await message.react('🔁');
-    debugLog("Message sent, moving onto the collector...");
-    const collector = interaction.channel.createMessageComponentCollector();
-
-    collector.on('collect', async (i) => {
-        debugLog("Entering collector...");
-        debugLog("customID: " + i.customId);
-        try {
-            debugLog("Deferring a reply inside the collector...");
-            await i.deferReply({ ephemeral: false });
-        } catch (error) {
-            debugLog(error);
-        }
-        if (i.customId === 'dm-' + uniqueId) {
-            debugLog("Passed the dm check...");
-            await i.user.send(
-                {
-                    content: `<@${i.user.id}>`,
-                    embeds: [
-                        new EmbedBuilder()
-                            .setTitle(promptContent)
-                            .setImage('attachment://image.png'),
-                        //.addFields(testPrompt),
-                    ],
-                    //fetchReply: true
-                    //components: [button],
-                    files: [attachment]
-                }
-            );
-            await i.deleteReply();
-            debugLog("Dm sent.");
-        } else if (i.customId === 'repeat-' + uniqueId) {
-            debugLog("Passed the repeat check...");
-            debugLog("Invoking ProcessPromptAndGrabImage...");
-            i.commandName = interaction.commandName;
-            i.options = interaction.options;
-            await ProcessPromptAndGrabImage(folderPath, i, promptContent, originalFilePath);
-
-        }
-    });
-    debugLog("\n\n END EMBEDREPLY \n\n");
+    await waitForImageAndSend(interaction, promptJson, outputPath, filename, promptContent, originalFilePath);
+    debugLog("\n\n END processPromptAndGrabImage \n\n");
 }
 
-function PromptNameBuilder(interaction) {
-    debugLog("\n\n START PROMPTNAMEBUILDER \n\n");
-    debugLog("PromptNameBuilder...");
-    let promptToDisplay = "";
-    promptToDisplay = "/" + interaction.commandName + " prompt:" + interaction.options.getString('prompt') + " ";
-    if (interaction.options.getNumber('cfg')) {
-        promptToDisplay += "cfg:" + interaction.options.getNumber('cfg') + " ";
-    }
-    if (interaction.options.getString('negative')) {
-        promptToDisplay += "negative:" + interaction.options.getString('negative') + " ";
-    }
-    if (interaction.options.getString('style')) {
-        promptToDisplay += "style:" + interaction.options.getString('style') + " ";
-    }
-    if (interaction.options.getNumber('noise')) {
-        promptToDisplay += "noise:" + interaction.options.getNumber('noise') + " ";
-    }
-    if (interaction.options.getString('lora')) {
-        promptToDisplay += "lora:" + interaction.options.getString('lora') + " ";
-    }
-    debugLog("Finished building the prompt: " + promptToDisplay);
-    debugLog("\n\n END PROMPTNAMEBUILDER \n\n");
-    return promptToDisplay;
-
-}
-
-function JsonBuilder(interaction, originalFilePath) {
-    console.log("JB Original file path: " + originalFilePath);
+//
+// jsonBuilder
+// ComfyUI needs workflows to know what it needs to do
+// these workflows get sent as a JSON file
+// in order to process Discord users' requests we need to turn their slash commands
+// into valid JSON prompts
+//
+function jsonBuilder(interaction, originalFilePath) {
+    debugLog("\n\n jsonBuilder START \n\n");
+    // I store all of my workflows in workflows.json, should be included with the commit
     const configFile = fs.readFileSync('./workflows.json', 'utf8');
+    // allConfigs is just pretty much the entire configFile we read from workflows.json
     const allConfigs = JSON.parse(configFile);
+    // I use formattedDate to set unique names for images
     const currentDate = new Date();
     const formattedDate = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1)
         .toString()
@@ -200,7 +54,12 @@ function JsonBuilder(interaction, originalFilePath) {
             .padStart(2, '0')}-${currentDate.getMinutes().toString().padStart(2, '0')}-${currentDate
                 .getSeconds()
                 .toString()
-                .padStart(2, '0')}-${currentDate.getMilliseconds().toString().padStart(3, '0')}`;
+            .padStart(2, '0')}-${currentDate.getMilliseconds().toString().padStart(3, '0')}`;
+
+    //
+    // SWITCH-CASE for commands
+    // handles various workflow related JSON logic
+    //
     switch (interaction.commandName) {
         case 'imagine':
             let promptJsonImagine = allConfigs['imagine'];
@@ -225,60 +84,73 @@ function JsonBuilder(interaction, originalFilePath) {
         case 'nsfw':
             let promptJsonNsfw = allConfigs['nsfw'];
             let promptRequest = interaction.options.getString('prompt');
+            if (interaction.options.getString('lora')) {
+                promptJsonNsfw["10"]["inputs"]["lora_name"] = interaction.options.getString('lora') + ".safetensors";
+            }
             switch (interaction.options.getString('lora')) {
-                case 'doggy':
+                case 'nsfw-doggy':
                     promptRequest += ", dggy, girl, pov, penis";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "doggy.safetensors";
                     break;
-                case 'blowjob':
+                case 'nsfw-blowjob':
                     promptRequest += ", woman, sucking a cock";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "blowjob.safetensors";
                     break;
-                case 'cum':
+                case 'nsfw-cum':
                     promptRequest += ", woman, cum on face";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "cum.safetensors";
                     break;
-                case 'penis':
+                case 'nsfw-penis':
                     promptRequest += ", penisart, penis face, ball sack, hairy balls, penis veins, outlined, eyes, mouth, tail, arms, legs, hands, feet";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "penis.safetensors";
                     break;
-                case 'ahegao':
+                case 'nsfw-ahegao':
                     promptRequest += ", tongue out, ahegao, drool";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "ahegao.safetensors";
                     break;
-                case 'topless':
+                case 'nsfw-topless':
                     promptRequest += ", topless woman breasts";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "topless.safetensors";
                     break;
-                case 'titsout':
+                case 'nsfw-titsout':
                     promptRequest += ", boutx clothes";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "titsout.safetensors";
                     break;
-                case 'greg':
+                case 'sfw-greg':
                     promptRequest += ", greg rutkowski";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "greg.safetensors";
                     break;
-                case 'chalkdust':
+                case 'sfw-chalkdust':
                     promptRequest += ", chalkdust";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "chalkdust.safetensors";
                     break;
-                case 'icons':
+                case 'sfw-icons':
                     promptRequest += ", icredm";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "icons.safetensors";
                     break;
-                case 'logo':
+                case 'sfw-logo':
                     promptRequest += ", LogoRedAF";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "logo.safetensors";
                     break;
-                case 'bigass':
+                case 'nsfw-bigass':
                     promptRequest += ", bottomheavy, big ass"; //, huge ass, gigantic ass, thick thighs, massive thighs";
-                    promptJsonNsfw["10"]["inputs"]["lora_name"] = "bigass.safetensors";
                     break;
-
+                case 'sfw-wlop':
+                    promptRequest += ", impasto, wlop";
+                    break;
+                case 'sfw-timjacobs':
+                    promptRequest += ", tim jacobus style painting, extensive color palette, balance of warm and cool tones, visually appealing, detailed shading and lighting, depth, soft shadows, bright highlights, Utilize classic oil painting techniques to paint a horrifying picture.";
+                    break;
+                case 'nsfw-flashing':
+                    promptRequest += ", shirtlift";
+                    break;
+                case 'sfw-chibi':
+                    promptRequest += ", chibi";
+                    break;
+                case 'sfw-gloomy':
+                    promptRequest += ", gloomy, yinan";
+                    break;
+                case 'sfw-foodpets':
+                    promptRequest += ", foodpets";
+                    break;
+                case 'sfw-ussrart':
+                    promptRequest += ", ussrart";
+                    break;
+                case 'nsfw-cowgirl':
+                    promptRequest += ", cwgr";
+                    break;
                 default:
                     promptRequest = promptRequest;
             }
-
             promptJsonNsfw["18"]["inputs"]["text_positive"] = promptRequest;
             promptJsonNsfw["19"]["inputs"]["text_l"] = promptRequest;
             promptJsonNsfw["3"]["inputs"]["seed"] = Math.floor(Math.random() * 10000001);
@@ -296,73 +168,299 @@ function JsonBuilder(interaction, originalFilePath) {
             return [promptJsonNsfw, formattedDate];
         case 'imgtoimg':
             let promptJsonImgToImg = allConfigs['imgtoimg'];
-            promptJsonImgToImg["20"]["inputs"]["text_positive"] = interaction.options.getString('prompt');
-            promptJsonImgToImg["2"]["inputs"]["text_l"] = interaction.options.getString('prompt');
+            let promptImgToImg = interaction.options.getString('prompt');
             const randomSeed = generateRandomSeed();
-            promptJsonImgToImg["6"]["inputs"]["seed"] = randomSeed;
+            promptJsonImgToImg["4"]["inputs"]["seed"] = randomSeed;
             console.log("Original file path: " +originalFilePath);
-            promptJsonImgToImg["11"]["inputs"]["image"] = originalFilePath;
+            promptJsonImgToImg["8"]["inputs"]["image"] = originalFilePath;
+            promptJsonImgToImg["11"]["inputs"]["filename_prefix"] = formattedDate;
             if (interaction.options.getString('negative') != null) {
-                promptJsonImgToImg["20"]["inputs"]["text_negative"] = interaction.options.getString('negative');
-                promptJsonImgToImg["4"]["inputs"]["text_l"] = interaction.options.getString('negative');
+                promptJsonImgToImg["15"]["inputs"]["Text"] = interaction.options.getString('negative');
             }
             if (interaction.options.getNumber('cfg') != null) {
-                promptJsonImgToImg["6"]["inputs"]["cfg"] = interaction.options.getNumber('cfg');
+                promptJsonImgToImg["4"]["inputs"]["cfg"] = interaction.options.getNumber('cfg');
             }
             if (interaction.options.getNumber('noise') != null) {
-                promptJsonImgToImg["6"]["inputs"]["denoise"] = interaction.options.getNumber('noise');
+                promptJsonImgToImg["4"]["inputs"]["denoise"] = interaction.options.getNumber('noise');
             }
             if (interaction.options.getString('style') != null) {
-                promptJsonImgToImg["20"]["inputs"]["style"] = interaction.options.getString('style');
+                promptJsonImgToImg["12"]["inputs"]["style"] = interaction.options.getString('style');
             }
-            promptJsonImgToImg["14"]["inputs"]["filename_prefix"] = formattedDate;
-
+            if (interaction.options.getString('lora')) {
+                promptJsonImgToImg  ["16"]["inputs"]["lora_name"] = interaction.options.getString('lora')+".safetensors";
+            }
+            switch (interaction.options.getString('lora')) {
+                case 'nsfw-doggy':
+                    promptImgToImg += ", dggy, girl, pov, penis";
+                    break;
+                case 'nsfw-blowjob':
+                    promptImgToImg += ", woman, sucking a cock";
+                    break;
+                case 'nsfw-cum':
+                    promptImgToImg += ", woman, cum on face";
+                    break;
+                case 'nsfw-penis':
+                    promptImgToImg += ", penisart, penis face, ball sack, hairy balls, penis veins, outlined, eyes, mouth, tail, arms, legs, hands, feet";
+                    break;
+                case 'nsfw-ahegao':
+                    promptImgToImg += ", tongue out, ahegao, drool";
+                    break;
+                case 'nsfw-topless':
+                    promptImgToImg += ", topless woman breasts";
+                    break;
+                case 'nsfw-titsout':
+                    promptImgToImg += ", boutx clothes";
+                    break;
+                case 'sfw-greg':
+                    promptImgToImg += ", greg rutkowski";
+                    break;
+                case 'sfw-chalkdust':
+                    promptImgToImg += ", chalkdust";
+                    break;
+                case 'sfw-icons':
+                    promptImgToImg += ", icredm";
+                    break;
+                case 'sfw-logo':
+                    promptImgToImg += ", LogoRedAF";
+                    break;
+                case 'nsfw-bigass':
+                    promptImgToImg += ", bottomheavy, big ass"; //, huge ass, gigantic ass, thick thighs, massive thighs";
+                    break;
+                case 'sfw-wlop':
+                    promptImgToImg += ", impasto, wlop";
+                    break;
+                case 'sfw-timjacobs':
+                    promptImgToImg += ", tim jacobus style painting, extensive color palette, balance of warm and cool tones, visually appealing, detailed shading and lighting, depth, soft shadows, bright highlights, Utilize classic oil painting techniques to paint a horrifying picture.";
+                    break;
+                case 'nsfw-flashing':
+                    promptImgToImg += ", shirtlift";
+                    break;
+                case 'sfw-chibi':
+                    promptImgToImg += ", chibi";
+                    break;
+                case 'sfw-gloomy':
+                    promptImgToImg += ", gloomy, yinan";
+                    break;
+                case 'sfw-foodpets':
+                    promptImgToImg += ", foodpets";
+                    break;
+                case 'sfw-ussrart':
+                    promptImgToImg += ", ussrart";
+                    break;
+                case 'nsfw-cowgirl':
+                    promptImgToImg += ", cwgr";
+                    break;
+                default:
+                    promptImgToImg = promptImgToImg;
+            }
+            promptJsonImgToImg["14"]["inputs"]["Text"] = promptImgToImg;
             return [promptJsonImgToImg, formattedDate];
-        case 'pixelart':
-            let promptJsonPixelart = allConfigs['pixelart'];
-            promptJsonPixelart["6"]["inputs"]["text"] = interaction.options.getString('prompt');
-            promptJsonPixelart["10"]["inputs"]["noise_seed"] = Math.floor(Math.random() * 10000001);;
-            if (interaction.options.getString('cfg') != null) {
-                promptJsonPixelart["10"]["inputs"]["cfg"] = interaction.options.getString('cfg');
-            }
-            if (interaction.options.getString('negative') != null) {
-                promptJsonPixelart["7"]["inputs"]["text"] = interaction.options.getString('negative');
-            }
-            promptJsonPixelart["19"]["inputs"]["filename_prefix"] = formattedDate;
-            return [promptJsonPixelart, formattedDate];
-        default:
-            // Code to handle unknown commands
-            break;
     }
-}
-function wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    debugLog("\n\n jsonBuilder END \n\n");
 }
 
-async function waitForImageAndSend(interaction, promptJson, folderPath, filename, promptContent, originalFilePath, maxAttempts = 600, intervalMs = 2000) {
+//
+// waitForImageAndSend
+// checks every 2 seconds 600 times for a file to pop up in our output folder with the expected name
+// can probably do this in a smarter way but I found that this works best for me
+//
+async function waitForImageAndSend(interaction, promptJson, outputPath, filename, promptContent, originalFilePath, maxAttempts = 600, intervalMs = 2000) {
+    debugLog("\n\n waitForImageAndSend START \n\n");
     let attempts = 0;
     while (attempts < maxAttempts) {
-        const filePath = findFileWithFilename(folderPath, filename);
+        const filePath = findFileWithFilename(outputPath, filename);
         if (filePath) {
             debugLog('File found:', filePath);
             const attachment = new AttachmentBuilder(filePath, 'image.png');
             if (originalFilePath) {
                 const originalAttachment = new AttachmentBuilder(originalFilePath, 'original.png');
-                await EmbedReply(interaction, attachment, promptJson, folderPath, filename, promptContent, originalAttachment, originalFilePath);
+                await embedReply(interaction, attachment, promptJson, outputPath, filename, promptContent, originalAttachment, originalFilePath);
                 return;
             }
             debugLog('Attachment: ' + attachment);
-            debugLog('Invoking EmbedReply...');
-            await EmbedReply(interaction, attachment, promptJson, folderPath, filename, promptContent);
+            debugLog('Invoking embedReply...');
+            await embedReply(interaction, attachment, promptJson, outputPath, filename, promptContent);
+            debugLog("\n\n waitForImageAndSend END \n\n");
             return;
         }
-        // Image not found, wait for the specified interval
         await wait(intervalMs);
         attempts++;
     }
 
     console.log(`Image not found after ${maxAttempts} attempts.`);
 }
+
+//
+// promptNameBuilder
+// grabs info from the interaction and builds it into a displayable string
+//
+function promptNameBuilder(interaction) {
+    debugLog("\n\n promptNameBuilder START \n\n");
+    let promptToDisplay = "";
+    promptToDisplay = "/" + interaction.commandName + " prompt:" + interaction.options.getString('prompt') + " ";
+    if (interaction.options.getNumber('cfg')) {
+        promptToDisplay += "cfg:" + interaction.options.getNumber('cfg') + " ";
+    }
+    if (interaction.options.getString('negative')) {
+        promptToDisplay += "negative:" + interaction.options.getString('negative') + " ";
+    }
+    if (interaction.options.getString('style')) {
+        promptToDisplay += "style:" + interaction.options.getString('style') + " ";
+    }
+    if (interaction.options.getNumber('noise')) {
+        promptToDisplay += "noise:" + interaction.options.getNumber('noise') + " ";
+    }
+    if (interaction.options.getString('lora')) {
+        promptToDisplay += "lora:" + interaction.options.getString('lora') + " ";
+    }
+    debugLog("Finished building the prompt: " + promptToDisplay);
+    debugLog("\n\n END promptNameBuilder \n\n");
+    return promptToDisplay;
+
+}
+
+//
+// embedReply
+// used for creating a proper looking embedded reply according to the original prompt
+// promptNameBuilder builds up a string from various slash command options that the user sent
+// so that you can copy and paste it easily
+//
+async function embedReply(interaction, attachment, promptJson, outputPath, filename, originalPromptContent, originalAttachment, originalFilePath) {
+    debugLog("\n\n embedReply START \n\n");
+    let promptContent = promptNameBuilder(interaction);
+    if (originalPromptContent) {
+        debugLog("We are in a repeat...");
+        promptContent = originalPromptContent;
+    }
+    debugLog("Attachment inside the embedReply: " + attachment);
+    const currentDate = new Date();
+    const uniqueId = (currentDate.getHours() * 3600000) + (currentDate.getMinutes() * 60000) + (currentDate.getSeconds() * 1000) + currentDate.getMilliseconds();
+    const button = new ActionRowBuilder()
+        .addComponents
+        (
+            new ButtonBuilder()
+                .setCustomId('repeat-' + uniqueId)
+                .setEmoji('🔄')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('dm-' + uniqueId)
+                .setEmoji('📩')
+                .setStyle(ButtonStyle.Secondary),
+    )
+
+    try {
+        debugLog("Deleting pending reply...");
+        await interaction.deleteReply();
+    }
+    catch (error) {
+        debugLog(error);
+    }
+    debugLog("Sending a message...");
+    let filesArray = [attachment];
+    if (originalAttachment) {
+        filesArray.push(originalAttachment);
+    }
+    await interaction.channel.send(
+        {
+            content: `<@${interaction.user.id}>` + ", your image is here!",
+            embeds: [
+                new EmbedBuilder()
+                    .setTitle(promptContent)
+                    .setImage('attachment://image.png'),
+            ],
+            components: [button],
+            files: filesArray,
+        }
+    );
+    debugLog("Message sent, moving onto the collector...");
+    const collector = interaction.channel.createMessageComponentCollector();
+
+    collector.on('collect', async (i) => {
+        debugLog("Entering collector...");
+        debugLog("customID: " + i.customId);
+        try {
+            debugLog("Deferring a reply inside the collector...");
+            await i.deferReply({ ephemeral: false });
+        } catch (error) {
+            debugLog(error);
+        }
+        if (i.customId === 'dm-' + uniqueId) {
+            debugLog("Passed the dm check...");
+            await i.user.send(
+                {
+                    content: `<@${i.user.id}>`,
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle(promptContent)
+                            .setImage('attachment://image.png'),
+                    ],
+                    files: [attachment]
+                }
+            );
+            await i.deleteReply();
+            debugLog("Dm sent.");
+        } else if (i.customId === 'repeat-' + uniqueId) {
+            debugLog("Passed the repeat check...");
+            debugLog("Invoking processPromptAndGrabImage...");
+            i.commandName = interaction.commandName;
+            i.options = interaction.options;
+            await processPromptAndGrabImage(outputPath, i, promptContent, originalFilePath);
+
+        }
+    });
+    debugLog("\n\n embedReply END \n\n");
+}
+
+//
+// autocompleteGlobals
+// handles the Discord autocompletion feature
+// but it's fairly expensive on the API requests so idk if I should keep it
+// but it's really nice to have
+//
+async function autocompleteGlobals(interaction) {
+    const focusedValue = interaction.options.getFocused();
+    const focusedOption = interaction.options.getFocused(true);
+    let choices;
+   
+    try {
+        if (focusedOption.name === 'style') {
+            const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+            const data = JSON.parse(jsonData);
+            choices = data.map(item => item.name);
+        }
+
+        if (focusedOption.name === 'lora') {
+            choices = ['nsfw-cowgirl', 'nsfw-flashing', 'nsfw-bigass', 'nsfw-topless', 'nsfw-doggy', 'nsfw-ahegao', 'nsfw-penis', 'nsfw-cum', 'nsfw-blowjob', 'nsfw-titsout',
+                'sfw-ussrart', 'sfw-gloomy', 'sfw-timjacobs', 'sfw-wlop', 'sfw-chibi', 'sfw-foodpets', 'sfw-logo', 'sfw-icons', 'sfw-chalkdust', 'sfw-greg', 'sfw-pixelart'];
+        }
+        const filtered = choices.filter(choice => choice.startsWith(focusedValue));
+
+        let options;
+        // Discord can only display 25 options at a time, otherwise throws an error
+        // need to filter the length to 25
+        if (filtered.length > 25) {
+            options = filtered.slice(0, 25);
+        } else {
+            options = filtered;
+        }
+
+        await interaction.respond(
+            options.map(choice => ({ name: choice, value: choice })),
+        );
+        await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
+    } catch (error) {
+        console.error('Error reading/parsing the JSON file:', error);
+    }
+}
+
+//
+// HELPER FUNCTIONS
+// pay no attention to these
+//
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function generateRandomSeed() {
     const originalSeed = 1041787352747838;
     const numberOfDigits = originalSeed.toString().length;
@@ -373,33 +471,38 @@ function generateRandomSeed() {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
-function findFileWithFilename(folderPath, filename) {
-    const files = fs.readdirSync(folderPath);
+function findFileWithFilename(outputPath, filename) {
+    const files = fs.readdirSync(outputPath);
     const foundFile = files.find((file) => file.includes(filename));
     if (foundFile) {
-        return path.join(folderPath, foundFile);
+        return path.join(outputPath, foundFile);
     }
     return null;
 }
-function findMostRecentImage(folderPath) {
-    const files = fs.readdirSync(folderPath).filter(file => file.endsWith('.png'));
+function findMostRecentImage(outputPath) {
+    const files = fs.readdirSync(outputPath).filter(file => file.endsWith('.png'));
     if (files.length === 0) {
         return null;
     }
 
     const recentFile = files.reduce((prev, curr) => {
-        const prevPath = path.join(folderPath, prev);
-        const currPath = path.join(folderPath, curr);
+        const prevPath = path.join(outputPath, prev);
+        const currPath = path.join(outputPath, curr);
         const prevStats = fs.statSync(prevPath);
         const currStats = fs.statSync(currPath);
         return prevStats.mtimeMs > currStats.mtimeMs ? prev : curr;
     });
 
-    return path.join(folderPath, recentFile);
+    return path.join(outputPath, recentFile);
 }
 function debugLog(message) {
     if (debug) {
         console.log(message);
     }
 }
-module.exports = { EmbedReply, ProcessPromptAndGrabImage };
+
+//
+// EXPORTS
+// if you want to use a function outside of this file then you need to export it here 
+//
+module.exports = { embedReply, processPromptAndGrabImage, autocompleteGlobals };

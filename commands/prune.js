@@ -1,5 +1,11 @@
 const { SlashCommandBuilder } = require('discord.js');
 
+
+//
+// PRUNE
+// just a simple command to delete a bit of latest messages
+// can be buggy
+//
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('prune')
