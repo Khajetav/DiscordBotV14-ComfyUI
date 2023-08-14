@@ -487,7 +487,7 @@ async function embedReply(interaction, attachment, promptJson, outputPath, filen
             content: `<@${interaction.user.id}>` + ", your image is here!",
             embeds: [
                 new EmbedBuilder()
-                    .setTitle(promptContent)
+                    .setDescription(`**${promptContent}**`)
                     .setImage('attachment://image.png'),
             ],
             components: [button],
@@ -513,7 +513,7 @@ async function embedReply(interaction, attachment, promptJson, outputPath, filen
                     content: `<@${i.user.id}>`,
                     embeds: [
                         new EmbedBuilder()
-                            .setTitle(promptContent)
+                            .setDescription(promptContent)
                             .setImage('attachment://image.png'),
                     ],
                     files: [attachment]
