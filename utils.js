@@ -6,8 +6,8 @@ const { jsonFilePath } = require('./config.json');
 const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
 const data = JSON.parse(jsonData);
 const styleChoices = data.map(item => item.name);
-const loraChoices = ['nsfw-cowgirl', 'nsfw-flashing', 'nsfw-bigass', 'nsfw-topless', 'nsfw-doggy', 'nsfw-ahegao', 'nsfw-penis', 'nsfw-cum', 'nsfw-blowjob', 'nsfw-titsout',
-    'sfw-ussrart', 'sfw-gloomy', 'sfw-timjacobs', 'sfw-wlop', 'sfw-chibi', 'sfw-foodpets', 'sfw-logo', 'sfw-icons', 'sfw-chalkdust', 'sfw-greg', 'sfw-pixelart'];
+const loraChoices = ['nsfw-cowgirl', 'nsfw-flashing', 'nsfw-bigass', 'nsfw-topless', 'nsfw-doggy', 'nsfw-ahegao', 'nsfw-penis', 'nsfw-cum', 'nsfw-blowjob', 'nsfw-titsout', 'nsfw-nudify','nsfw-onoff', 'nsfw-abomination',
+    'sfw-ussrart', 'sfw-gloomy', 'sfw-timjacobs', 'sfw-wlop', 'sfw-chibi', 'sfw-foodpets', 'sfw-logo', 'sfw-icons', 'sfw-chalkdust', 'sfw-greg', 'sfw-pixelart', 'sfw-voxel', 'sfw-jasmine', 'sfw-dragon', 'sfw-giger', 'sfw-rubbercup'];
 //
 // UTILITIES FILE
 // this is where I store most of my functions
@@ -222,6 +222,30 @@ function jsonBuilder(interaction, originalFilePath) {
                 case 'nsfw-cowgirl':
                     promptRequest += ", cwgr";
                     break;
+                case 'nsfw-abomination':
+                    promptRequest += ", ab0m";
+                    break;
+                case 'nsfw-nudify':
+                    promptRequest += ", large breasts, nude woman, topless";
+                    break;
+                case 'nsfw-onoff':
+                    promptRequest += ", onoff";
+                    break;
+                case 'sfw-rubbercup':
+                    promptRequest += ", Rubberhose Style";
+                    break;
+                case 'sfw-jasmine':
+                    promptRequest += ", jsmn style";
+                    break;
+                case 'sfw-voxel':
+                    promptRequest += ", voxel style";
+                    break;
+                case 'sfw-dragon':
+                    promptRequest += ", DTstyle";
+                    break;
+                case 'sfw-giger':
+                    promptRequest += ", g1g3r";
+                    break;
                 default:
                     promptRequest = promptRequest;
             }
@@ -323,6 +347,30 @@ function jsonBuilder(interaction, originalFilePath) {
                     break;
                 case 'nsfw-cowgirl':
                     promptImgToImg += ", cwgr";
+                    break;
+                case 'nsfw-abomination':
+                    promptImgToImg += ", ab0m";
+                    break;
+                case 'nsfw-nudify':
+                    promptImgToImg += ", large breasts, nude woman, topless";
+                    break;
+                case 'nsfw-onoff':
+                    promptImgToImg += ", onoff";
+                    break;
+                case 'sfw-rubbercup':
+                    promptImgToImg += ", Rubberhose Style";
+                    break;
+                case 'sfw-jasmine':
+                    promptImgToImg += ", jsmn style";
+                    break;
+                case 'sfw-voxel':
+                    promptImgToImg += ", voxel style";
+                    break;
+                case 'sfw-dragon':
+                    promptImgToImg += ", DTstyle";
+                    break;
+                case 'sfw-giger':
+                    promptImgToImg += ", g1g3r";
                     break;
                 default:
                     promptImgToImg = promptImgToImg;
