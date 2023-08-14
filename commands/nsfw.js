@@ -15,7 +15,7 @@ module.exports = {
     //
     data: new SlashCommandBuilder()
         .setName('nsfw')
-        .setDescription('imagines tits')
+        .setDescription('Dream of not very subtle things')
         .addStringOption(option => option.setName('prompt').setDescription('What you want to imagine').setRequired(true))
         .addStringOption(option => option.setName('lora').setDescription('Special action').setRequired(false).setAutocomplete(true))
         .addNumberOption(option => option.setName('cfg').setDescription('How strong is the prompt').setRequired(false))
@@ -37,7 +37,6 @@ module.exports = {
     // 
     async execute(interaction) {
         await interaction.deferReply();
-        console.log("Output path:" + outputPath);
         processPromptAndGrabImage(outputPath, interaction);
     }
 };

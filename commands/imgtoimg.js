@@ -15,7 +15,7 @@ module.exports = {
     //
     data: new SlashCommandBuilder()
         .setName('imgtoimg')
-        .setDescription('Change a pic into a different pic')
+        .setDescription('Change an image into another image')
         .addAttachmentOption(option => option.setName('image').setDescription('The image file').setRequired(true))
         .addStringOption(option => option.setName('prompt').setDescription('The positive prompt').setRequired(true))
         .addStringOption(option => option.setName('negative').setDescription('The negative prompt').setRequired(false))

@@ -14,7 +14,7 @@ module.exports = {
     //
     data: new SlashCommandBuilder()
         .setName('imagine')
-        .setDescription('imagines tits')
+        .setDescription('dreams up of an image')
         .addStringOption(option => option.setName('prompt').setDescription('What you want to imagine').setRequired(true))
         .addNumberOption(option => option.setName('cfg').setDescription('How strong is the prompt').setRequired(false))
         .addStringOption(option => option.setName('negative').setDescription('The negative prompt').setRequired(false))
