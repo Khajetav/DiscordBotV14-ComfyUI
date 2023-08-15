@@ -239,19 +239,19 @@
             "class_type": "SaveImage"
         },
         "10": {
-            "inputs": {
-                "lora_name": "sfw-chalkdust.safetensors",
-                "strength_model": 1,
-                "strength_clip": 1,
-                "model": [
-                    "15",
-                    0
-                ],
-                "clip": [
-                    "15",
-                    1
-                ]
-            },
+          "inputs": {
+            "lora_name": "sfw-extradetails.safetensors",
+            "strength_model": 1,
+            "strength_clip": 1,
+            "model": [
+              "15",
+              0
+            ],
+            "clip": [
+              "15",
+              1
+            ]
+          },
             "class_type": "LoraLoader"
         },
         "15": {
@@ -479,7 +479,7 @@
     },
     "16": {
       "inputs": {
-        "lora_name": "sfw-chalkdust.safetensors",
+        "lora_name": "sfw-extradetails.safetensors",
         "strength_model": 1,
         "strength_clip": 1,
         "model": [

@@ -3,9 +3,12 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { jsonFilePath } = require('./config.json');
-const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
-const data = JSON.parse(jsonData);
-const styleChoices = data.map(item => item.name);
+let styleChoices
+if (!styleChoices) {
+    const jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    const data = JSON.parse(jsonData);
+    styleChoices = data.map(item => item.name);
+}
 const loraChoices = ['nsfw-cowgirl', 'nsfw-flashing', 'nsfw-bigass', 'nsfw-topless', 'nsfw-doggy', 'nsfw-ahegao', 'nsfw-penis', 'nsfw-cum', 'nsfw-blowjob', 'nsfw-titsout', 'nsfw-nudify','nsfw-onoff', 'nsfw-abomination',
     'sfw-ussrart', 'sfw-gloomy', 'sfw-timjacobs', 'sfw-wlop', 'sfw-chibi', 'sfw-foodpets', 'sfw-logo', 'sfw-icons', 'sfw-chalkdust', 'sfw-greg', 'sfw-pixelart', 'sfw-voxel', 'sfw-jasmine', 'sfw-dragon', 'sfw-giger', 'sfw-rubbercup'];
 //
@@ -47,10 +50,8 @@ async function autocompleteGlobals(interaction) {
             options = filtered;
         }
 
-        await interaction.respond(
-            options.map(choice => ({ name: choice, value: choice })),
-        );
-        await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
+        await interaction.respond(options.map(choice => ({ name: choice, value: choice })),);
+        //await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
     } catch (error) {
         console.error('Error reading/parsing the JSON file:', error);
     }
@@ -244,7 +245,7 @@ function jsonBuilder(interaction, originalFilePath) {
                     promptRequest += ", DTstyle";
                     break;
                 case 'sfw-giger':
-                    promptRequest += ", g1g3r";
+                    promptRequest += ", (((g1g3r)))";
                     break;
                 default:
                     promptRequest = promptRequest;
@@ -487,7 +488,7 @@ async function embedReply(interaction, attachment, promptJson, outputPath, filen
             content: `<@${interaction.user.id}>` + ", your image is here!",
             embeds: [
                 new EmbedBuilder()
-                    .setDescription(`**${promptContent}**`)
+                    .setDescription(promptContent)
                     .setImage('attachment://image.png'),
             ],
             components: [button],
