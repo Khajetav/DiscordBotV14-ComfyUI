@@ -10,7 +10,8 @@ if (!styleChoices) {
     styleChoices = data.map(item => item.name);
 }
 const loraChoices = ['nsfw-cowgirl', 'nsfw-flashing', 'nsfw-bigass', 'nsfw-topless', 'nsfw-doggy', 'nsfw-ahegao', 'nsfw-penis', 'nsfw-cum', 'nsfw-blowjob', 'nsfw-titsout', 'nsfw-nudify','nsfw-onoff', 'nsfw-abomination',
-    'sfw-ussrart', 'sfw-gloomy', 'sfw-timjacobs', 'sfw-wlop', 'sfw-chibi', 'sfw-foodpets', 'sfw-logo', 'sfw-icons', 'sfw-chalkdust', 'sfw-greg', 'sfw-pixelart', 'sfw-voxel', 'sfw-jasmine', 'sfw-dragon', 'sfw-giger', 'sfw-rubbercup'];
+    'sfw-ussrart', 'sfw-gloomy', 'sfw-timjacobs', 'sfw-wlop', 'sfw-chibi', 'sfw-foodpets', 'sfw-logo', 'sfw-icons', 'sfw-chalkdust', 'sfw-greg', 'sfw-pixelart', 'sfw-voxel', 'sfw-jasmine', 'sfw-dragon', 'sfw-giger',
+    'sfw-rubbercup', 'sfw-apocalypse', 'sfw-oilpainting', 'sfw-film'];
 //
 // UTILITIES FILE
 // this is where I store most of my functions
@@ -247,6 +248,15 @@ function jsonBuilder(interaction, originalFilePath) {
                 case 'sfw-giger':
                     promptRequest += ", (((g1g3r)))";
                     break;
+                case 'sfw-film':
+                    promptRequest += ", filmic";
+                    break;
+                case 'sfw-oilpainting':
+                    promptRequest += ", bichu, oil painting";
+                    break;
+                case 'sfw-apocalypse':
+                    promptRequest += ", SZ_4poXL enviroment";
+                    break;
                 default:
                     promptRequest = promptRequest;
             }
@@ -372,6 +382,15 @@ function jsonBuilder(interaction, originalFilePath) {
                     break;
                 case 'sfw-giger':
                     promptImgToImg += ", g1g3r";
+                    break;
+                case 'sfw-film':
+                    promptImgToImg += ", filmic";
+                    break;
+                case 'sfw-oilpainting':
+                    promptImgToImg += ", bichu, oil painting";
+                    break;
+                case 'sfw-apocalypse':
+                    promptImgToImg += ", SZ_4poXL enviroment";
                     break;
                 default:
                     promptImgToImg = promptImgToImg;
