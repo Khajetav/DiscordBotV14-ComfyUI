@@ -17,7 +17,7 @@ module.exports = {
         .addStringOption(option => option.setName('prompt').setDescription('What you want to imagine').setRequired(true))
         .addNumberOption(option => option.setName('cfg').setDescription('How strong is the prompt').setRequired(false))
         .addStringOption(option => option.setName('negative').setDescription('The negative prompt').setRequired(false))
-        .addStringOption(option => option.setName('style').setDescription('Style of the picture').setRequired(false).setAutocomplete(true)),
+        .addStringOption(option => option.setName('style').setDescription('Style of the picture').setRequired(false).setAutocomplete(false)),
     //https://discordjs.guide/slash-commands/autocomplete.html#sending-results
     //
     // AUTOCOMPLETE HANDLING

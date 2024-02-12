@@ -2,7 +2,7 @@
     "imagine": {
                 "4": {
             "inputs": {
-                "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
+                "ckpt_name": "hephaistos.safetensors"
             },
             "class_type": "CheckpointLoaderSimple"
         },
@@ -179,7 +179,7 @@
 
 
 
-    "nsfw": {
+    "dream": {
                 "3": {
             "inputs": {
                 "seed": 448867526498324,
@@ -240,7 +240,7 @@
         },
         "10": {
           "inputs": {
-            "lora_name": "sfw-extradetails.safetensors",
+            "lora_name": "extradetails.safetensors",
             "strength_model": 1,
             "strength_clip": 1,
             "model": [
@@ -255,9 +255,9 @@
             "class_type": "LoraLoader"
         },
         "15": {
-            "inputs": {
-                "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
-            },
+          "inputs": {
+            "ckpt_name": "albedo.safetensors"
+          },
             "class_type": "CheckpointLoaderSimple"
         },
         "18": {
@@ -317,7 +317,7 @@
   "imgtoimg": {
     "1": {
       "inputs": {
-        "ckpt_name": "xl6HEPHAISTOSSD10XLSFW_v10.safetensors"
+        "ckpt_name": "albedo.safetensors"
       },
       "class_type": "CheckpointLoaderSimple"
     },
@@ -479,7 +479,7 @@
     },
     "16": {
       "inputs": {
-        "lora_name": "sfw-extradetails.safetensors",
+        "lora_name": "extradetails.safetensors",
         "strength_model": 1,
         "strength_clip": 1,
         "model": [

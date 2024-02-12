@@ -9,9 +9,15 @@ if (!styleChoices) {
     const data = JSON.parse(jsonData);
     styleChoices = data.map(item => item.name);
 }
-const loraChoices = ['nsfw-cowgirl', 'nsfw-flashing', 'nsfw-bigass', 'nsfw-topless', 'nsfw-doggy', 'nsfw-ahegao', 'nsfw-penis', 'nsfw-cum', 'nsfw-blowjob', 'nsfw-titsout', 'nsfw-nudify','nsfw-onoff', 'nsfw-abomination',
-    'sfw-ussrart', 'sfw-gloomy', 'sfw-timjacobs', 'sfw-wlop', 'sfw-chibi', 'sfw-foodpets', 'sfw-logo', 'sfw-icons', 'sfw-chalkdust', 'sfw-greg', 'sfw-pixelart', 'sfw-voxel', 'sfw-jasmine', 'sfw-dragon', 'sfw-giger',
-    'sfw-rubbercup', 'sfw-apocalypse', 'sfw-oilpainting', 'sfw-film'];
+const loraChoices = ['ussrart', 'gloomy', 'timjacobs', 'wlop', 'chibi', 'foodpets', 'logo', 'icons', 'chalkdust',
+    'greg', 'pixelart', 'voxel', 'jasmine', 'dragon', 'giger', 'rubbercup', 'apocalypse', 'oilpainting',
+    'film', 'belle', 'beyondthedark', 'serafini', 'aethercloud', 'frazetta',
+    'school', 'eggleston', 'circuit', 'alchemy', 'pixelred', 'pixelgba', 'pixellah', 'pixelgameicon',
+    'pixellucasarts', 'pixelkairo', 'pixeluo', 'pixelgenshinicon', 'kitsune', 'cctv',
+    'pixelsoft'];
+const modelChoices = ['animebluepencil', 'cursed', 'detailedface', 'dreamshaper', 'hephaistos',
+    'sdxlbase', 'talmen', 'albedo', 'crystalclear', 'zavy', 'counterfeit', 'dynavision', 'think', 'protovision', 'pixelwave',
+    'furtastic', 'icedcoffee', 'furryfantasy','envy','cartoonreal', 'turbo'];
 //
 // UTILITIES FILE
 // this is where I store most of my functions
@@ -30,30 +36,23 @@ const debug = false;
 async function autocompleteGlobals(interaction) {
     const focusedValue = interaction.options.getFocused();
     const focusedOption = interaction.options.getFocused(true);
-    let choices;
+    const choiceMap = {
+        'style': styleChoices,
+        'lora': loraChoices,
+        'model': modelChoices
+    };
+
     try {
-
-        if (focusedOption.name === 'style') {
-            choices = styleChoices;
-        }
-
-        if (focusedOption.name === 'lora') {
-            choices = loraChoices;
-        }
+        const choices = choiceMap[focusedOption.name] || [];
         const filtered = choices.filter(choice => choice.startsWith(focusedValue));
+        const options = filtered.slice(0, 25); // Discord can only display 25 options at a time
 
-        let options;
-        // Discord can only display 25 options at a time, otherwise throws an error
-        // need to filter the length to 25
-        if (filtered.length > 25) {
-            options = filtered.slice(0, 25);
-        } else {
-            options = filtered;
-        }
-
-        await interaction.respond(options.map(choice => ({ name: choice, value: choice })),);
-        //await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
+        await interaction.respond(options.map(choice => ({ name: choice, value: choice })));
     } catch (error) {
+        interaction.deleteReply();
+        interaction.channel.send({
+            content: "Something went wrong with the autoprediction.\n" + promptText,
+        });
         console.error('Error reading/parsing the JSON file:', error);
     }
 }
@@ -75,7 +74,17 @@ async function processPromptAndGrabImage(outputPath, interaction, promptContent,
     debugLog("interaction.commandName:", interaction.commandName);
     debugLog('processPromptAndGrabImage...');
     debugLog('Sending the prompt to ComfyUI...');
-    const response = await axios.post('http://127.0.0.1:8188/prompt', { prompt: promptJson });
+    try {
+        const response = await axios.post('http://127.0.0.1:8188/prompt', {
+            prompt: promptJson
+        });
+    } catch (e) {
+        let promptText = promptNameBuilder(interaction);
+        interaction.deleteReply();
+        interaction.channel.send({
+            content: "Bot is currently sleeping, try /mini or just fucking ping me lol\n" + promptText,
+        });
+    }
     await waitForImageAndSend(interaction, promptJson, outputPath, filename, promptContent, originalFilePath);
     debugLog("\n\n END processPromptAndGrabImage \n\n");
 }
@@ -88,18 +97,27 @@ async function processPromptAndGrabImage(outputPath, interaction, promptContent,
 function autocorrect(interaction) {
     const loraOption = interaction.options.getString('lora');
     const styleOption = interaction.options.getString('style');
+    const modelOption = interaction.options.getString('model');
+    let promptContent = promptNameBuilder(interaction);
     try {
         if (styleOption && !styleChoices.includes(styleOption)) {
             interaction.deleteReply();
             interaction.channel.send({
-                content: `<@${interaction.user.id}>` + ", you've selected an invalid style!",
+                content: `<@${interaction.user.id}>` + ", you've selected an invalid style!\n" + promptContent,
             });
             return 0;
         }
         else if (loraOption && !loraChoices.includes(loraOption)) {
             interaction.deleteReply();
             interaction.channel.send({
-                content: `<@${interaction.user.id}>` + ", you've selected an invalid lora!",
+                content: `<@${interaction.user.id}>` + ", you've selected an invalid lora!\n" + promptContent,
+            });
+            return 0;
+        }
+        else if (modelOption && !modelChoices.includes(modelOption)) {
+            interaction.deleteReply();
+            interaction.channel.send({
+                content: `<@${interaction.user.id}>` + ", you've selected an invalid model!\n" + promptContent,
             });
             return 0;
         }
@@ -157,127 +175,163 @@ function jsonBuilder(interaction, originalFilePath) {
 
             promptJsonImagine["19"]["inputs"]["filename_prefix"] = formattedDate;
             return [promptJsonImagine, formattedDate];
-        case 'nsfw':
-            let promptJsonNsfw = allConfigs['nsfw'];
+        case 'dream':
+            let promptJsonDream = allConfigs['dream'];
             let promptRequest = interaction.options.getString('prompt');
             if (interaction.options.getString('lora')) {
-                promptJsonNsfw["10"]["inputs"]["lora_name"] = interaction.options.getString('lora') + ".safetensors";
+                promptJsonDream["10"]["inputs"]["lora_name"] = interaction.options.getString('lora') + ".safetensors";
+            }
+            if (interaction.options.getString('model')) {
+                promptJsonDream["15"]["inputs"]["ckpt_name"] = interaction.options.getString('model') + ".safetensors";
+            }
+            if (interaction.options.getString('width')) {
+                promptJsonDream["5"]["inputs"]["width"] = interaction.options.getString('width');
+            }
+            if (interaction.options.getString('height')) {
+                promptJsonDream["5"]["inputs"]["height"] = interaction.options.getString('height');
             }
             switch (interaction.options.getString('lora')) {
-                case 'nsfw-doggy':
-                    promptRequest += ", dggy, girl, pov, penis";
-                    break;
-                case 'nsfw-blowjob':
-                    promptRequest += ", woman, sucking a cock";
-                    break;
-                case 'nsfw-cum':
-                    promptRequest += ", woman, cum on face";
-                    break;
-                case 'nsfw-penis':
-                    promptRequest += ", penisart, penis face, ball sack, hairy balls, penis veins, outlined, eyes, mouth, tail, arms, legs, hands, feet";
-                    break;
-                case 'nsfw-ahegao':
-                    promptRequest += ", tongue out, ahegao, drool";
-                    break;
-                case 'nsfw-topless':
-                    promptRequest += ", topless woman breasts";
-                    break;
-                case 'nsfw-titsout':
-                    promptRequest += ", boutx clothes";
-                    break;
-                case 'sfw-greg':
+                case 'greg':
                     promptRequest += ", greg rutkowski";
                     break;
-                case 'sfw-chalkdust':
+                case 'chalkdust':
                     promptRequest += ", chalkdust";
                     break;
-                case 'sfw-icons':
+                case 'icons':
                     promptRequest += ", icredm";
                     break;
-                case 'sfw-logo':
+                case 'logo':
                     promptRequest += ", LogoRedAF";
                     break;
-                case 'nsfw-bigass':
-                    promptRequest += ", bottomheavy, big ass"; //, huge ass, gigantic ass, thick thighs, massive thighs";
-                    break;
-                case 'sfw-wlop':
+                case 'wlop':
                     promptRequest += ", impasto, wlop";
                     break;
-                case 'sfw-timjacobs':
+                case 'timjacobs':
                     promptRequest += ", tim jacobus style painting, extensive color palette, balance of warm and cool tones, visually appealing, detailed shading and lighting, depth, soft shadows, bright highlights, Utilize classic oil painting techniques to paint a horrifying picture.";
                     break;
-                case 'nsfw-flashing':
-                    promptRequest += ", shirtlift";
-                    break;
-                case 'sfw-chibi':
+                case 'chibi':
                     promptRequest += ", chibi";
                     break;
-                case 'sfw-gloomy':
+                case 'gloomy':
                     promptRequest += ", gloomy, yinan";
                     break;
-                case 'sfw-foodpets':
+                case 'foodpets':
                     promptRequest += ", foodpets";
                     break;
-                case 'sfw-ussrart':
+                case 'ussrart':
                     promptRequest += ", ussrart";
                     break;
-                case 'nsfw-cowgirl':
-                    promptRequest += ", cwgr";
-                    break;
-                case 'nsfw-abomination':
-                    promptRequest += ", ab0m";
-                    break;
-                case 'nsfw-nudify':
-                    promptRequest += ", large breasts, nude woman, topless";
-                    break;
-                case 'nsfw-onoff':
-                    promptRequest += ", onoff";
-                    break;
-                case 'sfw-rubbercup':
+                case 'rubbercup':
                     promptRequest += ", Rubberhose Style";
                     break;
-                case 'sfw-jasmine':
+                case 'jasmine':
                     promptRequest += ", jsmn style";
                     break;
-                case 'sfw-voxel':
+                case 'voxel':
                     promptRequest += ", voxel style";
                     break;
-                case 'sfw-dragon':
+                case 'dragon':
                     promptRequest += ", DTstyle";
                     break;
-                case 'sfw-giger':
+                case 'giger':
                     promptRequest += ", (((g1g3r)))";
                     break;
-                case 'sfw-film':
+                case 'film':
                     promptRequest += ", filmic";
                     break;
-                case 'sfw-oilpainting':
+                case 'oilpainting':
                     promptRequest += ", bichu, oil painting";
                     break;
-                case 'sfw-apocalypse':
+                case 'apocalypse':
                     promptRequest += ", SZ_4poXL enviroment";
+                    break;
+                case 'belle':
+                    promptRequest += ", Belle Delphine";
+                    break;
+                case 'beyondthedark':
+                    promptRequest += ", beyond_the_black_rainbow";
+                    break;
+                case 'serafini':
+                    promptRequest += ", Serafini Style";
+                    break;
+                case 'aethercloud':
+                    promptRequest += ", it looks like a photo of a cloud";
+                    break;
+                case 'frazetta':
+                    promptRequest += ", fr4z3tt4";
+                    break;
+                case 'school':
+                    promptRequest += ", kyoshitsu, kaidan, rouka";
+                    break;
+                case 'eggleston':
+                    promptRequest += ", william eggleston";
+                    break;
+                case 'circuit':
+                    promptRequest += ", 3l3ctronics";
+                    break;
+                case 'alchemy':
+                    promptRequest += ", alchemy";
+                    break;
+                case 'pixelred':
+                    promptRequest += ", Pixel Art, PixArFK";
+                    break;
+                case 'pixellah':
+                    promptRequest += ", pixel art, pixel";
+                    break;
+                case 'pixeluo':
+                    promptRequest += ", Pixelate  Game Play, 2D, 16bit, pixels, UOStyle, Ultima Online, pixelate, fantasy, Top Down, RPG, D&D, Textures, SNES, NES, video games";
+                    break;
+                case 'pixelkairo':
+                    promptRequest += ", kairo, pixel art";
+                    break;
+                case 'pixellucasarts':
+                    promptRequest += ", lcas artstyle";
+                    break;
+                case 'pixelgenshinicon':
+                    promptRequest += ", game icon";
+                    break;
+                case 'pixelgameicon':
+                    promptRequest += ", 2d icon";
+                    break;
+                case 'kitsune':
+                    promptRequest += ", kitsune";
+                    break;
+                case 'cctv':
+                    promptRequest += ", cctvfootage";
+                    break;
+                case 'pixelsoft':
+                    promptRequest += ", pixel art";
                     break;
                 default:
                     promptRequest = promptRequest;
             }
-            promptJsonNsfw["18"]["inputs"]["text_positive"] = promptRequest;
-            promptJsonNsfw["19"]["inputs"]["text_l"] = promptRequest;
-            promptJsonNsfw["3"]["inputs"]["seed"] = Math.floor(Math.random() * 10000001);
+            promptJsonDream["18"]["inputs"]["text_positive"] = promptRequest;
+            promptJsonDream["19"]["inputs"]["text_l"] = promptRequest;
+            promptJsonDream["3"]["inputs"]["seed"] = Math.floor(Math.random() * 10000001);
             if (interaction.options.getNumber('cfg') != null) {
-                promptJsonNsfw["3"]["inputs"]["cfg"] = interaction.options.getNumber('cfg');
+                promptJsonDream["3"]["inputs"]["cfg"] = interaction.options.getNumber('cfg');
             }
             if (interaction.options.getString('style') != null) {
-                promptJsonNsfw["18"]["inputs"]["style"] = interaction.options.getString('style');
+                promptJsonDream["18"]["inputs"]["style"] = interaction.options.getString('style');
             }
             if (interaction.options.getString('negative') != null) {
-                promptJsonNsfw["18"]["inputs"]["text_negative"] = interaction.options.getString('negative');
-                promptJsonNsfw["20"]["inputs"]["text_l"] = interaction.options.getString('negative');
+                promptJsonDream["18"]["inputs"]["text_negative"] = interaction.options.getString('negative');
+                promptJsonDream["20"]["inputs"]["text_l"] = interaction.options.getString('negative');
             }
-            promptJsonNsfw["9"]["inputs"]["filename_prefix"] = formattedDate;
-            return [promptJsonNsfw, formattedDate];
+            promptJsonDream["9"]["inputs"]["filename_prefix"] = formattedDate;
+            return [promptJsonDream, formattedDate];
         case 'imgtoimg':
             let promptJsonImgToImg = allConfigs['imgtoimg'];
             let promptImgToImg = interaction.options.getString('prompt');
+            if (interaction.options.getString('width')) {
+                promptJsonImgToImg["9"]["inputs"]["side_length"] = interaction.options.getString('width');
+            }
+            if (interaction.options.getString('height')) {
+                promptJsonImgToImg["9"]["inputs"]["side_length"] = interaction.options.getString('height');
+            }
+            if (interaction.options.getString('model')) {
+                promptJsonImgToImg["1"]["inputs"]["ckpt_name"] = interaction.options.getString('model') + ".safetensors";
+            }
             const randomSeed = generateRandomSeed();
             promptJsonImgToImg["4"]["inputs"]["seed"] = randomSeed;
             console.log("Original file path: " +originalFilePath);
@@ -299,98 +353,113 @@ function jsonBuilder(interaction, originalFilePath) {
                 promptJsonImgToImg  ["16"]["inputs"]["lora_name"] = interaction.options.getString('lora')+".safetensors";
             }
             switch (interaction.options.getString('lora')) {
-                case 'nsfw-doggy':
-                    promptImgToImg += ", dggy, girl, pov, penis";
-                    break;
-                case 'nsfw-blowjob':
-                    promptImgToImg += ", woman, sucking a cock";
-                    break;
-                case 'nsfw-cum':
-                    promptImgToImg += ", woman, cum on face";
-                    break;
-                case 'nsfw-penis':
-                    promptImgToImg += ", penisart, penis face, ball sack, hairy balls, penis veins, outlined, eyes, mouth, tail, arms, legs, hands, feet";
-                    break;
-                case 'nsfw-ahegao':
-                    promptImgToImg += ", tongue out, ahegao, drool";
-                    break;
-                case 'nsfw-topless':
-                    promptImgToImg += ", topless woman breasts";
-                    break;
-                case 'nsfw-titsout':
-                    promptImgToImg += ", boutx clothes";
-                    break;
-                case 'sfw-greg':
+                case 'greg':
                     promptImgToImg += ", greg rutkowski";
                     break;
-                case 'sfw-chalkdust':
+                case 'chalkdust':
                     promptImgToImg += ", chalkdust";
                     break;
-                case 'sfw-icons':
+                case 'icons':
                     promptImgToImg += ", icredm";
                     break;
-                case 'sfw-logo':
+                case 'logo':
                     promptImgToImg += ", LogoRedAF";
                     break;
-                case 'nsfw-bigass':
-                    promptImgToImg += ", bottomheavy, big ass"; //, huge ass, gigantic ass, thick thighs, massive thighs";
-                    break;
-                case 'sfw-wlop':
+                case 'wlop':
                     promptImgToImg += ", impasto, wlop";
                     break;
-                case 'sfw-timjacobs':
+                case 'timjacobs':
                     promptImgToImg += ", tim jacobus style painting, extensive color palette, balance of warm and cool tones, visually appealing, detailed shading and lighting, depth, soft shadows, bright highlights, Utilize classic oil painting techniques to paint a horrifying picture.";
                     break;
-                case 'nsfw-flashing':
-                    promptImgToImg += ", shirtlift";
-                    break;
-                case 'sfw-chibi':
+                case 'chibi':
                     promptImgToImg += ", chibi";
                     break;
-                case 'sfw-gloomy':
+                case 'gloomy':
                     promptImgToImg += ", gloomy, yinan";
                     break;
-                case 'sfw-foodpets':
+                case 'foodpets':
                     promptImgToImg += ", foodpets";
                     break;
-                case 'sfw-ussrart':
+                case 'ussrart':
                     promptImgToImg += ", ussrart";
                     break;
-                case 'nsfw-cowgirl':
-                    promptImgToImg += ", cwgr";
-                    break;
-                case 'nsfw-abomination':
-                    promptImgToImg += ", ab0m";
-                    break;
-                case 'nsfw-nudify':
-                    promptImgToImg += ", large breasts, nude woman, topless";
-                    break;
-                case 'nsfw-onoff':
-                    promptImgToImg += ", onoff";
-                    break;
-                case 'sfw-rubbercup':
+                case 'rubbercup':
                     promptImgToImg += ", Rubberhose Style";
                     break;
-                case 'sfw-jasmine':
+                case 'jasmine':
                     promptImgToImg += ", jsmn style";
                     break;
-                case 'sfw-voxel':
+                case 'voxel':
                     promptImgToImg += ", voxel style";
                     break;
-                case 'sfw-dragon':
+                case 'dragon':
                     promptImgToImg += ", DTstyle";
                     break;
-                case 'sfw-giger':
+                case 'giger':
                     promptImgToImg += ", g1g3r";
                     break;
-                case 'sfw-film':
+                case 'film':
                     promptImgToImg += ", filmic";
                     break;
-                case 'sfw-oilpainting':
+                case 'oilpainting':
                     promptImgToImg += ", bichu, oil painting";
                     break;
-                case 'sfw-apocalypse':
+                case 'apocalypse':
                     promptImgToImg += ", SZ_4poXL enviroment";
+                    break;
+                case 'belle':
+                    promptImgToImg += ", Belle Delphine";
+                    break;
+                case 'beyondthedark':
+                    promptImgToImg += ", beyond_the_black_rainbow";
+                    break;
+                case 'serafini':
+                    promptImgToImg += ", Serafini Style";
+                    break;
+                case 'aethercloud':
+                    promptImgToImg += ", it looks like a photo of a cloud";
+                    break;
+                case 'frazetta':
+                    promptImgToImg += ", fr4z3tt4";
+                    break;
+                case 'school':
+                    promptImgToImg += ", kyoshitsu, kaidan, rouka";
+                    break;
+                case 'eggleston':
+                    promptImgToImg += ", william eggleston";
+                    break;
+                case 'circuit':
+                    promptImgToImg += ", 3l3ctronics";
+                    break;
+                case 'alchemy':
+                    promptImgToImg += ", alchemy";
+                    break;
+                case 'pixelred':
+                    promptImgToImg += ", Pixel Art, PixArFK";
+                    break;
+                case 'pixellah':
+                    promptImgToImg += ", pixel art, pixel";
+                    break;
+                case 'pixeluo':
+                    promptImgToImg += ", Pixelate  Game Play, 2D, 16bit, pixels, UOStyle, Ultima Online, pixelate, fantasy, Top Down, RPG, D&D, Textures, SNES, NES, video games";
+                    break;
+                case 'pixelkairo':
+                    promptImgToImg += ", kairo, pixel art";
+                    break;
+                case 'pixellucasarts':
+                    promptImgToImg += ", lcas artstyle";
+                    break;
+                case 'pixelgenshinicon':
+                    promptImgToImg += ", game icon";
+                    break;
+                case 'pixelgameicon':
+                    promptImgToImg += ", 2d icon";
+                    break;
+                case 'cctv':
+                    promptImgToImg += ", cctvfootage";
+                    break;
+                case 'pixelsoft':
+                    promptImgToImg += ", pixel art";
                     break;
                 default:
                     promptImgToImg = promptImgToImg;
@@ -455,6 +524,15 @@ function promptNameBuilder(interaction) {
     if (interaction.options.getString('lora')) {
         promptToDisplay += "lora:" + interaction.options.getString('lora') + " ";
     }
+    if (interaction.options.getString('model')) {
+        promptToDisplay += "model:" + interaction.options.getString('model') + " ";
+    }
+    if (interaction.options.getString('width')) {
+        promptToDisplay += "width:" + interaction.options.getString('width') + " ";
+    }
+    if (interaction.options.getString('height')) {
+        promptToDisplay += "height:" + interaction.options.getString('height') + " ";
+    }
     debugLog("Finished building the prompt: " + promptToDisplay);
     debugLog("\n\n END promptNameBuilder \n\n");
     return promptToDisplay;
@@ -477,18 +555,18 @@ async function embedReply(interaction, attachment, promptJson, outputPath, filen
     debugLog("Attachment inside the embedReply: " + attachment);
     const currentDate = new Date();
     const uniqueId = (currentDate.getHours() * 3600000) + (currentDate.getMinutes() * 60000) + (currentDate.getSeconds() * 1000) + currentDate.getMilliseconds();
-    const button = new ActionRowBuilder()
-        .addComponents
-        (
-            new ButtonBuilder()
-                .setCustomId('repeat-' + uniqueId)
-                .setEmoji('🔄')
-                .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder()
-                .setCustomId('dm-' + uniqueId)
-                .setEmoji('📩')
-                .setStyle(ButtonStyle.Secondary),
-    )
+    //const button = new ActionRowBuilder()
+    //    .addComponents
+    //    (
+    //        new ButtonBuilder()
+    //            .setCustomId('repeat-' + uniqueId)
+    //            .setEmoji('🔄')
+    //            .setStyle(ButtonStyle.Secondary),
+    //        new ButtonBuilder()
+    //            .setCustomId('dm-' + uniqueId)
+    //            .setEmoji('📩')
+    //            .setStyle(ButtonStyle.Secondary),
+    //)
 
     try {
         debugLog("Deleting pending reply...");
@@ -510,46 +588,46 @@ async function embedReply(interaction, attachment, promptJson, outputPath, filen
                     .setDescription(promptContent)
                     .setImage('attachment://image.png'),
             ],
-            components: [button],
+            //components: [button],
             files: filesArray,
         }
     );
     debugLog("Message sent, moving onto the collector...");
-    const collector = interaction.channel.createMessageComponentCollector();
+    //const collector = interaction.channel.createMessageComponentCollector();
 
-    collector.on('collect', async (i) => {
-        debugLog("Entering collector...");
-        debugLog("customID: " + i.customId);
-        try {
-            debugLog("Deferring a reply inside the collector...");
-            await i.deferReply({ ephemeral: false });
-        } catch (error) {
-            debugLog(error);
-        }
-        if (i.customId === 'dm-' + uniqueId) {
-            debugLog("Passed the dm check...");
-            await i.user.send(
-                {
-                    content: `<@${i.user.id}>`,
-                    embeds: [
-                        new EmbedBuilder()
-                            .setDescription(promptContent)
-                            .setImage('attachment://image.png'),
-                    ],
-                    files: [attachment]
-                }
-            );
-            await i.deleteReply();
-            debugLog("Dm sent.");
-        } else if (i.customId === 'repeat-' + uniqueId) {
-            debugLog("Passed the repeat check...");
-            debugLog("Invoking processPromptAndGrabImage...");
-            i.commandName = interaction.commandName;
-            i.options = interaction.options;
-            await processPromptAndGrabImage(outputPath, i, promptContent, originalFilePath);
+    //collector.on('collect', async (i) => {
+    //    debugLog("Entering collector...");
+    //    debugLog("customID: " + i.customId);
+    //    try {
+    //        debugLog("Deferring a reply inside the collector...");
+    //        await i.deferReply({ ephemeral: false });
+    //    } catch (error) {
+    //        debugLog(error);
+    //    }
+    //    if (i.customId === 'dm-' + uniqueId) {
+    //        debugLog("Passed the dm check...");
+    //        await i.user.send(
+    //            {
+    //                content: `<@${i.user.id}>`,
+    //                embeds: [
+    //                    new EmbedBuilder()
+    //                        .setDescription(promptContent)
+    //                        .setImage('attachment://image.png'),
+    //                ],
+    //                files: [attachment]
+    //            }
+    //        );
+    //        await i.deleteReply();
+    //        debugLog("Dm sent.");
+    //    } else if (i.customId === 'repeat-' + uniqueId) {
+    //        debugLog("Passed the repeat check...");
+    //        debugLog("Invoking processPromptAndGrabImage...");
+    //        i.commandName = interaction.commandName;
+    //        i.options = interaction.options;
+    //        await processPromptAndGrabImage(outputPath, i, promptContent, originalFilePath);
 
-        }
-    });
+    //    }
+    //});
     debugLog("\n\n embedReply END \n\n");
 }
 

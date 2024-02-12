@@ -21,7 +21,10 @@ module.exports = {
         .addStringOption(option => option.setName('negative').setDescription('The negative prompt').setRequired(false))
         .addNumberOption(option => option.setName('noise').setDescription('Noise value from 0 to 1').setRequired(false))
         .addNumberOption(option => option.setName('cfg').setDescription('How strong is the prompt').setRequired(false))
+        .addStringOption(option => option.setName('width').setDescription('Width of the image (default is 1024)').setRequired(false))
+        .addStringOption(option => option.setName('height').setDescription('Height of the image (default is 1024)').setRequired(false))
         .addStringOption(option => option.setName('lora').setDescription('Special action').setRequired(false).setAutocomplete(true))
+        .addStringOption(option => option.setName('model').setDescription('Model of the generator').setRequired(false).setAutocomplete(true))
         .addStringOption(option => option.setName('style').setDescription('Style of the picture').setRequired(false).setAutocomplete(true)),
     //https://discordjs.guide/slash-commands/autocomplete.html#sending-results
     //
